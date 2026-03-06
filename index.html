@@ -74,13 +74,25 @@ body {
 .time{font-size:10.5px;color:#9aabb4;margin-top:3px;padding:0 3px;}
 .row.me .time{text-align:right;}
 
-.bar { height:64px;padding:0 12px;background:white;border-top:1px solid rgba(0,0,0,0.07);display:flex;align-items:center;gap:10px;flex-shrink:0; }
+.bar { height:64px;padding:0 12px;background:white;border-top:1px solid rgba(0,0,0,0.07);display:flex;align-items:center;gap:8px;flex-shrink:0;position:relative; }
 #msg { flex:1;padding:10px 16px;border:1.5px solid #e5e5e5;border-radius:24px;font-size:14.5px;font-family:'Noto Sans Thai',sans-serif;outline:none;background:#f7f7f7;color:#111;transition:border-color 0.2s,background 0.2s; }
 #msg:focus{border-color:var(--green);background:white;}
 #sendbtn { width:42px;height:42px;background:var(--green);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(6,199,85,0.4);transition:background 0.2s,transform 0.1s;flex-shrink:0; }
 #sendbtn:hover{background:var(--green-dark);}
 #sendbtn:active{transform:scale(0.9);}
 #sendbtn svg{width:18px;height:18px;fill:white;margin-left:2px;}
+#emojibtn { width:36px;height:36px;background:none;border:none;font-size:22px;cursor:pointer;flex-shrink:0;border-radius:50%;transition:background 0.15s;display:flex;align-items:center;justify-content:center; }
+#emojibtn:hover{background:#f0f0f0;}
+#emojipanel {
+  display:none;position:absolute;bottom:70px;left:12px;
+  background:white;border-radius:14px;padding:10px;
+  box-shadow:0 8px 30px rgba(0,0,0,0.15);
+  width:280px;z-index:100;
+  display:none;flex-wrap:wrap;gap:4px;
+}
+#emojipanel.show{display:flex;}
+.ep-emoji { font-size:22px;cursor:pointer;padding:4px;border-radius:6px;transition:background 0.1s;line-height:1; }
+.ep-emoji:hover{background:#f0f0f0;}
 </style>
 </head>
 <body>
@@ -111,6 +123,8 @@ body {
     </div>
     <div id="msgs"></div>
     <div class="bar">
+      <div id="emojipanel"></div>
+      <button id="emojibtn" onclick="toggleEmoji()">😊</button>
       <input id="msg" type="text" placeholder="พิมพ์ข้อความ..." autocomplete="off">
       <button id="sendbtn" onclick="send()">
         <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -120,7 +134,36 @@ body {
 </div>
 
 <script>
-var socket, me;
+var EMOJIS = ['😀','😂','😍','😎','😭','😅','🥰','😱','😡','🥹','👍','👎','❤️','🔥','✅','🎉','🙏','💪','😴','🤔','😏','🤣','😬','🥲','😤','🫡','🤩','😇','🥳','😈','👋','🤝','👀','💀','🫶','⭐','💯','🚀','🎯','💬'];
+
+function toggleEmoji(){
+  var p = document.getElementById('emojipanel');
+  if(p.classList.contains('show')){ p.classList.remove('show'); return; }
+  if(!p.innerHTML){
+    EMOJIS.forEach(function(e){
+      var s=document.createElement('span');
+      s.className='ep-emoji';s.textContent=e;
+      s.onclick=function(){ insertEmoji(e); };
+      p.appendChild(s);
+    });
+  }
+  p.classList.add('show');
+}
+
+function insertEmoji(e){
+  var inp = document.getElementById('msg');
+  inp.value += e;
+  inp.focus();
+  document.getElementById('emojipanel').classList.remove('show');
+}
+
+document.addEventListener('click', function(e){
+  if(!e.target.closest('#emojibtn') && !e.target.closest('#emojipanel')){
+    document.getElementById('emojipanel').classList.remove('show');
+  }
+});
+
+
 var COLORS = ['#e74c3c','#e67e22','#3498db','#9b59b6','#1abc9c','#e91e63','#ff5722','#607d8b'];
 function nameColor(n){var h=0;for(var i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))&0xffffffff;return COLORS[Math.abs(h)%COLORS.length];}
 function timeNow(){return new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});}
@@ -189,4 +232,3 @@ document.addEventListener('keydown',function(e){
 </script>
 </body>
 </html>
-
