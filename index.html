@@ -236,13 +236,6 @@ document.addEventListener('keydown',function(e){
   var chat=document.getElementById('chat');
   if(chat.style.display==='none'||chat.style.display==='') join(); else send();
 });
-
-// อ่าน ?room= จาก URL แล้วใส่ให้อัตโนมัติ
-(function(){
-  var params = new URLSearchParams(window.location.search);
-  var r = params.get('room');
-  if(r) document.getElementById('room').value = r;
-})();
 </script>
 </body>
 </html>
