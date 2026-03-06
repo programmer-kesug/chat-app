@@ -1,4 +1,3 @@
-cat > ~/chat-app/server.js << 'EOF'
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -16,16 +15,16 @@ io.on('connection', (socket) => {
     socket.username = name;
     users[socket.id] = name;
     io.emit('msg', { user: 'System', text: name + ' เข้าร่วมแล้ว' });
-    io.emit('users', Object.entries(users).map(([id,name]) => ({id,name})));
+    io.emit('users', Object.values(users));
   });
   socket.on('msg', (data) => {
-    io.emit('msg', { ...data, sid: socket.id });
+    io.emit('msg', data);
   });
   socket.on('disconnect', () => {
     if (socket.username) {
       delete users[socket.id];
       io.emit('msg', { user: 'System', text: socket.username + ' ออกไปแล้ว' });
-      io.emit('users', Object.entries(users).map(([id,name]) => ({id,name})));
+      io.emit('users', Object.values(users));
     }
   });
 });
@@ -34,4 +33,3 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
   console.log('Server running on port ' + PORT);
 });
-EOF
