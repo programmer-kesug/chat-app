@@ -111,7 +111,10 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 .ep-tab.active { background:#f0f0f0;color:#111;font-weight:600; }
 .ep-grid { display:flex;flex-wrap:wrap;gap:2px;max-height:160px;overflow-y:auto; }
 .ep-emoji { font-size:22px;cursor:pointer;padding:3px;border-radius:6px;line-height:1; }
-.ep-sticker { font-size:36px;cursor:pointer;padding:3px;border-radius:8px;line-height:1; }
+#imgbtn { width:34px;height:34px;background:none;border:none;font-size:20px;cursor:pointer;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center; }
+#imgbtn:active{background:#f0f0f0;}
+.bubble img { max-width:200px;max-height:200px;border-radius:10px;display:block;cursor:pointer; }
+.uploading { font-size:12px;color:#888;font-style:italic; }
 </style>
 </head>
 <body>
@@ -120,7 +123,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div class="login-icon">💬</div>
   <h2>เข้าสู่ห้องแชท</h2>
   <p>ตั้งชื่อและเลือกห้องที่ต้องการ</p>
-  <div class="ver">v1.6</div>
+  <div class="ver">v2.0</div>
   <div class="field-wrap">
     <div class="field-label">ชื่อของคุณ</div>
     <input id="name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
@@ -150,7 +153,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
         <div class="h-title" id="room-title">ห้อง Default</div>
         <div class="h-sub"><span class="dot"></span> <span id="h-sub-text">Online</span></div>
       </div>
-      <button id="sharebtn" onclick="shareRoom()">🔗 แชร์</button>
+      <button id="sharebtn" style="display:none" onclick="shareRoom()">🔗 แชร์</button>
     </div>
     <div class="dm-banner" id="dm-banner">
       <span id="dm-banner-text">💬 DM กับ ...</span>
@@ -166,6 +169,8 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
         <div class="ep-grid" id="ep-grid"></div>
       </div>
       <button id="emojibtn" onclick="toggleEmoji()">😊</button>
+      <button id="imgbtn" onclick="document.getElementById('imgfile').click()">🖼️</button>
+      <input id="imgfile" type="file" accept="image/*" style="display:none" onchange="uploadImg(this)">
       <input id="msg" type="text" placeholder="พิมพ์ข้อความ..." autocomplete="off">
       <button id="sendbtn" onclick="send()">
         <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -350,8 +355,14 @@ function addMsgToView(d, isDm){
     var col=document.createElement('div');col.className='col';
     if(!isMe){var sn=document.createElement('div');sn.className='sender';sn.textContent=d.user;col.appendChild(sn);}
     var bub=document.createElement('div');
-    bub.className='bubble '+(isMe?'me':'other')+(d.sticker?' sticker':'');
-    bub.textContent=d.text;
+    if(d.image){
+      bub.className='bubble '+(isMe?'me':'other');
+      var img=document.createElement('img');img.src=d.image;img.onclick=function(){window.open(d.image,'_blank');};
+      bub.appendChild(img);
+    } else {
+      bub.className='bubble '+(isMe?'me':'other')+(d.sticker?' sticker':'');
+      bub.textContent=d.text;
+    }
     var tm=document.createElement('div');tm.className='time';tm.textContent=timeNow();
     col.appendChild(bub);col.appendChild(tm);
     if(isMe){row.appendChild(col);row.appendChild(av);}else{row.appendChild(av);row.appendChild(col);}
@@ -370,8 +381,14 @@ function addDmToView(d){
   var col=document.createElement('div');col.className='col';
   if(!isMe){var sn=document.createElement('div');sn.className='sender';sn.textContent=d.fromName;col.appendChild(sn);}
   var bub=document.createElement('div');
-  bub.className='bubble dm-bubble '+(isMe?'me':'other')+(d.sticker?' sticker':'');
-  bub.textContent=d.text;
+  if(d.image){
+    bub.className='bubble dm-bubble '+(isMe?'me':'other');
+    var img=document.createElement('img');img.src=d.image;img.onclick=function(){window.open(d.image,'_blank');};
+    bub.appendChild(img);
+  } else {
+    bub.className='bubble dm-bubble '+(isMe?'me':'other')+(d.sticker?' sticker':'');
+    bub.textContent=d.text;
+  }
   var tm=document.createElement('div');tm.className='time';tm.textContent=timeNow();
   col.appendChild(bub);col.appendChild(tm);
   if(isMe){row.appendChild(col);row.appendChild(av);}else{row.appendChild(av);row.appendChild(col);}
@@ -389,6 +406,41 @@ function send(){
   }
   document.getElementById('msg').value='';
   document.getElementById('msg').focus();
+}
+
+function uploadImg(input){
+  var file=input.files[0]; if(!file||!socket) return;
+  input.value='';
+  // แสดง uploading
+  var tmpId='tmp_'+Date.now();
+  var msgs=document.getElementById('msgs');
+  var tmp=document.createElement('div');tmp.className='sys uploading';tmp.id=tmpId;tmp.textContent='⏳ กำลังอัพโหลดรูป...';
+  msgs.appendChild(tmp);msgs.scrollTop=msgs.scrollHeight;
+  // อ่านเป็น base64
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var b64=e.target.result.split(',')[1];
+    var fd=new FormData();
+    fd.append('image',b64);
+    fetch('https://api.imgbb.com/1/upload?key=9c3cae51f07e4cf9afca704b6a7814b6',{method:'POST',body:fd})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var el=document.getElementById(tmpId);if(el)el.remove();
+      if(data.success){
+        var url=data.data.url;
+        if(mode==='dm'&&dmTarget){
+          socket.emit('dm',{toId:dmTarget.id,text:'',image:url});
+        } else {
+          socket.emit('msg',{user:me,text:'',image:url});
+        }
+      }
+    })
+    .catch(function(){
+      var el=document.getElementById(tmpId);if(el)el.textContent='❌ อัพโหลดไม่สำเร็จ';
+      setTimeout(function(){var el=document.getElementById(tmpId);if(el)el.remove();},2000);
+    });
+  };
+  reader.readAsDataURL(file);
 }
 
 function shareRoom(){
