@@ -343,7 +343,7 @@ function addMsgToView(d, isDm){
   if(d.user==='System'){
     var s=document.createElement('div');s.className='sys';s.textContent=d.text;msgs.appendChild(s);
   } else {
-    var isMe=d.sid===myId;
+    var isMe = d.sid===myId || d.user===me;
     var row=document.createElement('div');row.className='row'+(isMe?' me':'');
     var av=document.createElement('div');av.className='avatar';av.textContent=d.user[0].toUpperCase();
     if(!isMe) av.style.background=nameColor(d.user);
