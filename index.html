@@ -142,7 +142,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div class="login-icon">💬</div>
   <h2>เข้าสู่ห้องแชท</h2>
   <p>ตั้งชื่อและเลือกห้องที่ต้องการ</p>
-  <div class="ver">v2.4</div>
+  <div class="ver">v2.6</div>
   <div class="field-wrap">
     <div class="field-label">ชื่อของคุณ</div>
     <input id="name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
@@ -155,8 +155,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div id="name-error"></div>
   <button onclick="join()">เข้าร่วม</button>
   <div class="selling-points">
-    <div class="sp">💬 แชทกลุ่ม • 👤 DM • 🖼️ รูปภาพ • 📞 Voice Call</div>
-
+    <div class="sp">💬 แชทกลุ่ม • 👤 DM • 🖼️ รูปภาพ • 😊 Emoji • 📞 Voice Call</div>
   </div>
 </div>
 
@@ -295,7 +294,9 @@ function join(){
     sessionStorage.setItem('chat_name', me);
     sessionStorage.setItem('chat_room', data.room);
     var roomName=data.room==='default'?'Default':data.room;
-    document.getElementById('room-title').textContent='ห้อง '+roomName;
+    var displayName='ห้อง '+roomName;
+    document.getElementById('room-title').textContent=displayName;
+    document.getElementById('room-title').dataset.group=displayName;
     document.getElementById('login').style.display='none';
     document.getElementById('chat').style.display='flex';
     // แสดง history เก่า
@@ -412,9 +413,8 @@ function openDM(user){
 
 function backToGroup(){
   dmTarget=null; mode='group';
-  var roomTitle=document.getElementById('room-title');
-  // restore room name
-  document.getElementById('room-title').textContent=roomTitle.dataset.room||document.getElementById('room-title').textContent;
+  var displayName=document.getElementById('room-title').dataset.group||'ห้อง Default';
+  document.getElementById('room-title').textContent=displayName;
   document.getElementById('h-sub-text').textContent='Online';
   document.getElementById('h-avatar').textContent='👥';
   document.getElementById('backbtn').classList.remove('show');
