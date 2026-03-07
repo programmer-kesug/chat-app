@@ -142,7 +142,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div class="login-icon">💬</div>
   <h2>เข้าสู่ห้องแชท</h2>
   <p>ตั้งชื่อและเลือกห้องที่ต้องการ</p>
-  <div class="ver">v2.7</div>
+  <div class="ver">v2.8</div>
   <div class="field-wrap">
     <div class="field-label">ชื่อของคุณ</div>
     <input id="name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
@@ -490,6 +490,26 @@ function send(){
   if(!t||!socket) return;
   sendTyping(false);
   clearTimeout(typingTimer);
+
+  // ลูกเต๋า
+  if(t.toLowerCase().startsWith('/roll')){
+    var parts=t.split(' ');
+    var count=parseInt(parts[1])||1;
+    count=Math.min(count,6); // สูงสุด 6 ลูก
+    var results=[];
+    for(var i=0;i<count;i++) results.push(Math.floor(Math.random()*6)+1);
+    var txt = count===1
+      ? '🎲 '+me+' ทอยได้ '+results[0]
+      : '🎲 '+me+' ทอยได้ '+results.join(', ')+' (รวม '+results.reduce(function(a,b){return a+b;},0)+')';
+    if(mode==='dm'&&dmTarget){
+      socket.emit('dm',{toId:dmTarget.id,text:txt});
+    } else {
+      socket.emit('msg',{user:me,text:txt});
+    }
+    document.getElementById('msg').value='';
+    document.getElementById('msg').focus();
+    return;
+  }
   if(mode==='dm'&&dmTarget){
     socket.emit('dm',{toId:dmTarget.id,text:t});
   } else {
