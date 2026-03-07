@@ -24,7 +24,19 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 .login-icon { width:80px;height:80px;background:var(--green);border-radius:24px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 8px 24px rgba(6,199,85,0.4);font-size:38px; }
 #login h2{font-size:22px;font-weight:700;color:#111;margin-bottom:6px;}
 #login p{font-size:13px;color:#999;margin-bottom:4px;}
-.ver{font-size:10px;color:#ccc;margin-bottom:18px;}
+.ver{font-size:10px;color:#ccc;margin-bottom:10px;}
+.selling-points{display:flex;flex-direction:column;gap:5px;margin-top:14px;background:#f8fffe;border-radius:12px;padding:10px 12px;border:1px solid #e0f5ea;}
+.sp{font-size:12px;color:#555;text-align:left;}
+
+/* VOICE CALL */
+#callbtn { width:34px;height:34px;background:none;border:none;font-size:20px;cursor:pointer;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center; }
+#callbtn:active{background:#f0f0f0;}
+#callbtn.incall{background:#e74c3c;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,0.4)}50%{box-shadow:0 0 0 8px rgba(231,76,60,0)}}
+.call-banner{background:#e74c3c;padding:8px 14px;font-size:12px;color:white;display:none;align-items:center;gap:8px;flex-shrink:0;}
+.call-banner.show{display:flex;}
+.call-banner span{flex:1;}
+#remoteAudio{display:none;}
 .field-label{font-size:12px;color:#888;text-align:left;margin-bottom:5px;padding-left:2px;}
 .field-wrap{margin-bottom:12px;}
 #login input{width:100%;padding:13px 16px;border:2px solid #eee;border-radius:12px;font-size:15px;font-family:'Noto Sans Thai',sans-serif;outline:none;transition:border-color 0.2s;background:#fafafa;color:#111;}
@@ -123,7 +135,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div class="login-icon">💬</div>
   <h2>เข้าสู่ห้องแชท</h2>
   <p>ตั้งชื่อและเลือกห้องที่ต้องการ</p>
-  <div class="ver">v2.1</div>
+  <div class="ver">v2.2</div>
   <div class="field-wrap">
     <div class="field-label">ชื่อของคุณ</div>
     <input id="name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
@@ -135,6 +147,12 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   </div>
   <div id="name-error"></div>
   <button onclick="join()">เข้าร่วม</button>
+  <div class="selling-points">
+    <div class="sp">🔒 ไม่ต้องสมัคร ไม่ต้องใช้เบอร์</div>
+    <div class="sp">⚡ เปิด URL คุยได้เลยทันที</div>
+    <div class="sp">👻 ปิด tab ข้อมูลหายหมด</div>
+    <div class="sp">🖼️ ส่งรูป • 😊 Emoji • 📞 Voice Call</div>
+  </div>
 </div>
 
 <div id="chat">
@@ -153,8 +171,14 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
         <div class="h-title" id="room-title">ห้อง Default</div>
         <div class="h-sub"><span class="dot"></span> <span id="h-sub-text">Online</span></div>
       </div>
+      <button id="callbtn" style="display:none" onclick="toggleCall()" title="Voice Call">📞</button>
       <button id="sharebtn" style="display:none" onclick="shareRoom()">🔗 แชร์</button>
     </div>
+    <div class="call-banner" id="call-banner">
+      <span id="call-banner-text">📞 กำลังโทร...</span>
+      <button onclick="endCall()" style="background:none;border:none;color:white;cursor:pointer;font-size:12px;font-weight:700;">วางสาย ✕</button>
+    </div>
+    <audio id="remoteAudio" autoplay></audio>
     <div class="dm-banner" id="dm-banner">
       <span id="dm-banner-text">💬 DM กับ ...</span>
       <button onclick="backToGroup()" style="background:none;border:none;color:#7d3c98;cursor:pointer;font-size:12px;">✕ ปิด</button>
@@ -275,6 +299,7 @@ function join(){
     window._userList = list;
     updateUsers(list); 
   });
+  socket.on('webrtc',function(d){ handleWebRTC(d); });
 }
 
 function updateUsers(list){
@@ -309,6 +334,7 @@ function openDM(user){
   document.getElementById('h-avatar').textContent='👤';
   document.getElementById('backbtn').classList.add('show');
   document.getElementById('sharebtn').style.display='none';
+  showCallBtn(true);
   document.getElementById('dm-banner').classList.add('show');
   document.getElementById('dm-banner-text').textContent='💬 DM กับ '+user.name+' (คนอื่นไม่เห็น)';
   document.getElementById('msg').classList.add('dm-mode');
@@ -332,6 +358,8 @@ function backToGroup(){
   document.getElementById('h-avatar').textContent='👥';
   document.getElementById('backbtn').classList.remove('show');
   document.getElementById('sharebtn').style.display='';
+  showCallBtn(false);
+  endCall();
   document.getElementById('dm-banner').classList.remove('show');
   document.getElementById('msg').classList.remove('dm-mode');
   document.getElementById('msg').placeholder='พิมพ์ข้อความ...';
@@ -443,6 +471,85 @@ function uploadImgFile(file){
     });
   };
   reader.readAsDataURL(file);
+}
+
+// ── WebRTC Voice Call ──
+var pc=null, localStream=null, callPeer=null;
+var ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'}]};
+
+function showCallBtn(show){ document.getElementById('callbtn').style.display=show?'':'none'; }
+
+function toggleCall(){
+  if(pc) endCall(); else startCall();
+}
+
+function startCall(){
+  if(!dmTarget){ alert('กรุณาเปิด DM ก่อนโทรครับ'); return; }
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    localStream=stream;
+    pc=new RTCPeerConnection(ICE);
+    stream.getTracks().forEach(function(t){ pc.addTrack(t,stream); });
+    pc.onicecandidate=function(e){ if(e.candidate) socket.emit('webrtc',{type:'candidate',to:dmTarget.id,candidate:e.candidate}); };
+    pc.ontrack=function(e){ document.getElementById('remoteAudio').srcObject=e.streams[0]; };
+    pc.createOffer().then(function(offer){
+      return pc.setLocalDescription(offer);
+    }).then(function(){
+      socket.emit('webrtc',{type:'offer',to:dmTarget.id,sdp:pc.localDescription});
+      setCallUI(true,'📞 กำลังโทรหา '+dmTarget.name+'...');
+    });
+  }).catch(function(){ alert('ไม่สามารถเข้าถึงไมค์ได้ครับ'); });
+}
+
+function endCall(){
+  if(pc){ pc.close(); pc=null; }
+  if(localStream){ localStream.getTracks().forEach(function(t){ t.stop(); }); localStream=null; }
+  if(callPeer&&socket) socket.emit('webrtc',{type:'end',to:callPeer});
+  callPeer=null;
+  setCallUI(false,'');
+}
+
+function setCallUI(active, text){
+  var btn=document.getElementById('callbtn');
+  var banner=document.getElementById('call-banner');
+  btn.textContent=active?'📵':'📞';
+  btn.classList.toggle('incall',active);
+  banner.classList.toggle('show',active);
+  document.getElementById('call-banner-text').textContent=text;
+}
+
+function handleWebRTC(data){
+  if(data.type==='offer'){
+    callPeer=data.from;
+    // แจ้งเตือนรับสาย
+    var accept=confirm('📞 '+data.fromName+' โทรหาคุณ รับสายไหม?');
+    if(!accept){ socket.emit('webrtc',{type:'end',to:data.from}); return; }
+    navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+      localStream=stream;
+      pc=new RTCPeerConnection(ICE);
+      stream.getTracks().forEach(function(t){ pc.addTrack(t,stream); });
+      pc.onicecandidate=function(e){ if(e.candidate) socket.emit('webrtc',{type:'candidate',to:data.from,candidate:e.candidate}); };
+      pc.ontrack=function(e){ document.getElementById('remoteAudio').srcObject=e.streams[0]; };
+      pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(function(){
+        return pc.createAnswer();
+      }).then(function(answer){
+        return pc.setLocalDescription(answer);
+      }).then(function(){
+        socket.emit('webrtc',{type:'answer',to:data.from,sdp:pc.localDescription});
+        setCallUI(true,'📞 กำลังคุยกับ '+data.fromName);
+      });
+    });
+  } else if(data.type==='answer'){
+    if(pc) pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(function(){
+      setCallUI(true,'📞 กำลังคุยกับ '+(dmTarget?dmTarget.name:''));
+    });
+  } else if(data.type==='candidate'){
+    if(pc) pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+  } else if(data.type==='end'){
+    endCall();
+    setCallUI(false,'');
+    var msgs=document.getElementById('msgs');
+    var s=document.createElement('div');s.className='sys';s.textContent='📵 วางสายแล้ว';msgs.appendChild(s);
+  }
 }
 
 function shareRoom(){
