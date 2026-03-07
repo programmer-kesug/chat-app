@@ -199,6 +199,17 @@ function timeNow(){return new Date().toLocaleTimeString('th-TH',{hour:'2-digit',
 var urlRoom=new URLSearchParams(window.location.search).get('room')||'';
 if(urlRoom) document.getElementById('room').value=urlRoom;
 
+// auto-rejoin ถ้า refresh
+(function(){
+  var savedName=sessionStorage.getItem('chat_name');
+  var savedRoom=sessionStorage.getItem('chat_room');
+  if(savedName){
+    document.getElementById('name').value=savedName;
+    document.getElementById('room').value=savedRoom||'';
+    join();
+  }
+})();
+
 function join(){
   me=document.getElementById('name').value.trim();
   var room=document.getElementById('room').value.trim()||'default';
@@ -210,6 +221,8 @@ function join(){
   socket.on('nameTaken',function(){ socket.disconnect(); socket=null; document.getElementById('name').style.borderColor='#e74c3c'; document.getElementById('name-error').textContent='⚠️ ชื่อนี้มีคนใช้อยู่ในห้องนี้แล้ว'; document.getElementById('name').focus(); });
   socket.on('joined',function(data){
     myId=data.sid;
+    sessionStorage.setItem('chat_name', me);
+    sessionStorage.setItem('chat_room', data.room);
     var roomName=data.room==='default'?'Default':data.room;
     document.getElementById('room-title').textContent='ห้อง '+roomName;
     document.getElementById('login').style.display='none';
