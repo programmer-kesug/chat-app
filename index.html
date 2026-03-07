@@ -123,7 +123,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div class="login-icon">💬</div>
   <h2>เข้าสู่ห้องแชท</h2>
   <p>ตั้งชื่อและเลือกห้องที่ต้องการ</p>
-  <div class="ver">v2.0</div>
+  <div class="ver">v2.1</div>
   <div class="field-wrap">
     <div class="field-label">ชื่อของคุณ</div>
     <input id="name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
@@ -411,12 +411,14 @@ function send(){
 function uploadImg(input){
   var file=input.files[0]; if(!file||!socket) return;
   input.value='';
-  // แสดง uploading
+  uploadImgFile(file);
+}
+
+function uploadImgFile(file){
   var tmpId='tmp_'+Date.now();
   var msgs=document.getElementById('msgs');
   var tmp=document.createElement('div');tmp.className='sys uploading';tmp.id=tmpId;tmp.textContent='⏳ กำลังอัพโหลดรูป...';
   msgs.appendChild(tmp);msgs.scrollTop=msgs.scrollHeight;
-  // อ่านเป็น base64
   var reader=new FileReader();
   reader.onload=function(e){
     var b64=e.target.result.split(',')[1];
@@ -457,6 +459,20 @@ document.addEventListener('keydown',function(e){
   if(e.key!=='Enter') return;
   var chat=document.getElementById('chat');
   if(chat.style.display==='none'||chat.style.display==='') join(); else send();
+});
+
+// paste รูปได้เลย
+document.addEventListener('paste',function(e){
+  if(!socket) return;
+  var items=e.clipboardData&&e.clipboardData.items;
+  if(!items) return;
+  for(var i=0;i<items.length;i++){
+    if(items[i].type.indexOf('image')!==-1){
+      var file=items[i].getAsFile();
+      if(file) uploadImgFile(file);
+      break;
+    }
+  }
 });
 
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js'); }
