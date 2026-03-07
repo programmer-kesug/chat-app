@@ -43,6 +43,14 @@ io.on('connection', (socket) => {
     }
   });
 
+  // WebRTC signaling
+  socket.on('webrtc', (data) => {
+    const payload = { ...data, from: socket.id, fromName: socket.username };
+    if (io.sockets.sockets.get(data.to)) {
+      io.to(data.to).emit('webrtc', payload);
+    }
+  });
+
   socket.on('disconnect', () => {
     if (socket.username) {
       const room = socket.room;
