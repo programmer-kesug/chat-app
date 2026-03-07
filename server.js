@@ -51,6 +51,18 @@ io.on('connection', (socket) => {
     }
   });
 
+  // Typing indicator
+  socket.on('typing', (data) => {
+    if(data.toId) {
+      // DM typing
+      if(io.sockets.sockets.get(data.toId))
+        io.to(data.toId).emit('typing', { name: socket.username, typing: data.typing, dm: true });
+    } else {
+      // Group typing
+      socket.to(socket.room).emit('typing', { name: socket.username, typing: data.typing });
+    }
+  });
+
   socket.on('disconnect', () => {
     if (socket.username) {
       const room = socket.room;

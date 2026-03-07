@@ -127,6 +127,13 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 #imgbtn:active{background:#f0f0f0;}
 .bubble img { max-width:200px;max-height:200px;border-radius:10px;display:block;cursor:pointer; }
 .uploading { font-size:12px;color:#888;font-style:italic; }
+.typing-indicator { display:none;align-items:center;gap:6px;padding:4px 10px;animation:fadeUp 0.2s ease; }
+.typing-indicator.show { display:flex; }
+.typing-text { font-size:11px;color:#7a8f9a;font-style:italic; }
+.typing-dots span { display:inline-block;width:5px;height:5px;background:#9aabb4;border-radius:50%;margin:0 1px;animation:tdot 1.2s infinite; }
+.typing-dots span:nth-child(2){animation-delay:0.2s}
+.typing-dots span:nth-child(3){animation-delay:0.4s}
+@keyframes tdot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
 </style>
 </head>
 <body>
@@ -135,7 +142,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div class="login-icon">💬</div>
   <h2>เข้าสู่ห้องแชท</h2>
   <p>ตั้งชื่อและเลือกห้องที่ต้องการ</p>
-  <div class="ver">v2.3</div>
+  <div class="ver">v2.4</div>
   <div class="field-wrap">
     <div class="field-label">ชื่อของคุณ</div>
     <input id="name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
@@ -182,6 +189,10 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
       <button onclick="backToGroup()" style="background:none;border:none;color:#7d3c98;cursor:pointer;font-size:12px;">✕ ปิด</button>
     </div>
     <div id="msgs"></div>
+    <div class="typing-indicator" id="typing-indicator">
+      <div class="typing-dots"><span></span><span></span><span></span></div>
+      <div class="typing-text" id="typing-text">กำลังพิมพ์...</div>
+    </div>
     <div class="bar">
       <div id="emojipanel">
         <div class="ep-tabs">
@@ -203,11 +214,27 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 
 <script>
 var socket, me, myId, curTab='emoji';
-var dmTarget = null; // { id, name }
-var dmUnread = {}; // { socketId: count }
-var dmHistory = {}; // { socketId: [msgs] }
+var dmTarget = null;
+var dmUnread = {};
+var dmHistory = {};
 var groupHistory = [];
-var mode = 'group'; // 'group' or 'dm'
+var mode = 'group';
+var typingTimer = null;
+var typingUsers = {};
+
+// เสียงแจ้งเตือน (สร้างจาก Web Audio API ไม่ต้องโหลดไฟล์)
+function playNotify(){
+  try {
+    var ctx = new (window.AudioContext||window.webkitAudioContext)();
+    var o = ctx.createOscillator();
+    var g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.value = 880;
+    g.gain.setValueAtTime(0.3, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.3);
+    o.start(ctx.currentTime); o.stop(ctx.currentTime+0.3);
+  } catch(e){}
+}
 
 var EMOJIS=['😀','😃','😄','😁','😆','😅','🤣','😂','🙂','🙃','😉','😊','😇','🥰','😍','🤩','😘','😚','😋','😛','😜','🤪','😝','🤑','🤗','🤭','🫡','🤫','🤔','🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','😮','😯','😲','😳','🥺','🥹','😦','😧','😨','😰','😥','😢','😭','😱','😖','😣','😞','😓','😩','😫','🥱','😤','😡','😠','🤬','😈','👿','💀','☠️','💩','🤡','👻','👽','👾','🤖','😺','😸','🎃','👍','👎','👌','✌️','🤞','🤟','🤘','🤙','👈','👉','👆','👇','☝️','✋','🤚','🖐️','👋','🤝','🙌','👏','🫶','🙏','💪','🦾','❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💔','❤️‍🔥','💕','💞','💓','💗','💖','💘','💝','💟','🔥','💥','⭐','🌟','✨','🎉','🎊','🎈','🏆','🥇','🎯','🎮','🎲','🎭','🎨','🎬','🎤','🎧','🎵','🎶','🚀','✈️','🚗','🍕','🍔','🍟','🌮','🍣','🍜','🍰','🎂','🧁','🍫','🍬','🍭','🍺','🥂','🧋','💻','📱','💯'];
 var STICKERS=['😂','🥹','😍','🤩','😎','🥳','😭','😱','🤯','😤','🥺','😴','🤪','😇','🤬','👻','💩','🤡','👾','🎃','🫶','💪','👑','🦁','🐯','🦊','🐸','🐧','🦄','🐲'];
@@ -280,6 +307,7 @@ function join(){
     groupHistory.push(d);
     saveHistory();
     if(mode==='group') addMsgToView(d,false);
+    if(d.user!=='System' && d.sid!==myId) playNotify();
   });
   socket.on('dm',function(d){
     var otherId=d.fromId===myId?d.toId:d.fromId;
@@ -288,10 +316,20 @@ function join(){
     saveHistory();
     if(mode==='dm'&&dmTarget&&dmTarget.id===otherId){
       addDmToView(d);
+      if(d.fromId!==myId) playNotify();
     } else if(d.fromId!==myId){
       dmUnread[otherId]=(dmUnread[otherId]||0)+1;
       updateBadges();
+      playNotify();
     }
+  });
+  socket.on('typing',function(d){
+    if(d.typing){
+      typingUsers[d.name]=true;
+    } else {
+      delete typingUsers[d.name];
+    }
+    updateTyping();
   });
   socket.on('users',function(list){ 
     window._userList = list;
@@ -314,9 +352,34 @@ function updateUsers(list){
   });
 }
 
-function updateBadges(){
-  if(window._userList) updateUsers(window._userList);
+function updateTyping(){
+  var names=Object.keys(typingUsers);
+  var el=document.getElementById('typing-indicator');
+  var txt=document.getElementById('typing-text');
+  if(names.length>0){
+    txt.textContent=names.join(', ')+' กำลังพิมพ์...';
+    el.classList.add('show');
+  } else {
+    el.classList.remove('show');
+  }
 }
+
+function sendTyping(isTyping){
+  if(!socket) return;
+  if(mode==='dm'&&dmTarget){
+    socket.emit('typing',{toId:dmTarget.id,typing:isTyping});
+  } else {
+    socket.emit('typing',{typing:isTyping});
+  }
+}
+
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('msg').addEventListener('input',function(){
+    sendTyping(true);
+    clearTimeout(typingTimer);
+    typingTimer=setTimeout(function(){ sendTyping(false); },1500);
+  });
+});
 
 function updateUsersSidebar(){
   if(window._userList) updateUsers(window._userList);
@@ -425,6 +488,8 @@ function addDmToView(d){
 function send(){
   var t=document.getElementById('msg').value.trim();
   if(!t||!socket) return;
+  sendTyping(false);
+  clearTimeout(typingTimer);
   if(mode==='dm'&&dmTarget){
     socket.emit('dm',{toId:dmTarget.id,text:t});
   } else {
