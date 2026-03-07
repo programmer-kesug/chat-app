@@ -15,7 +15,13 @@
 <style>
 :root { --green: #06C755; --green-dark: #05a847; }
 * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; overflow: hidden; }
+html, body { 
+  height: 100%; 
+  height: 100dvh;
+  overflow: hidden; 
+  position: fixed;
+  width: 100%;
+}
 body { font-family: 'Noto Sans Thai', sans-serif; background: #c8d6e0; display: flex; justify-content: center; align-items: center; background-image: radial-gradient(ellipse at 20% 50%, rgba(6,199,85,0.12) 0%, transparent 60%); }
 
 /* LOGIN */
@@ -39,7 +45,6 @@ body { font-family: 'Noto Sans Thai', sans-serif; background: #c8d6e0; display: 
   display: none;
   flex-direction: row;
   width: 100vw; 
-  height: 100vh;
   height: 100dvh;
   max-width: 680px; 
   max-height: 820px;
@@ -54,8 +59,8 @@ body { font-family: 'Noto Sans Thai', sans-serif; background: #c8d6e0; display: 
   #chat {
     max-width: 100vw !important;
     max-height: 100dvh !important;
-    border-radius: 0 !important;
     height: 100dvh !important;
+    border-radius: 0 !important;
   }
   #login { width: 90vw; }
 }
@@ -139,6 +144,7 @@ body { font-family: 'Noto Sans Thai', sans-serif; background: #c8d6e0; display: 
   <div class="login-icon">💬</div>
   <h2>เข้าสู่ห้องแชท</h2>
   <p>ตั้งชื่อและเลือกห้องที่ต้องการ</p>
+  <div style="font-size:10px;color:#ccc;margin-top:-16px;margin-bottom:16px;">v1.5</div>
   <div class="field-wrap">
     <div class="field-label">ชื่อของคุณ</div>
     <input id="name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
