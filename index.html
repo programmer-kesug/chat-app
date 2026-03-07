@@ -231,7 +231,10 @@ function join(){
       updateBadges();
     }
   });
-  socket.on('users',function(list){ updateUsers(list); });
+  socket.on('users',function(list){ 
+    window._userList = list;
+    updateUsers(list); 
+  });
 }
 
 function updateUsers(list){
@@ -249,19 +252,11 @@ function updateUsers(list){
 }
 
 function updateBadges(){
-  document.querySelectorAll('.user-item').forEach(function(div){
-    var nameEl=div.querySelector('.u-name');
-    if(!nameEl) return;
-    var badge=div.querySelector('.u-badge');
-  });
-  // re-render userlist เพื่ออัปเดต badge
-  var ul=document.getElementById('userlist');
-  ul.querySelectorAll('.user-item').forEach(function(div){
-    var nameEl=div.querySelector('.u-name');
-    if(!nameEl||nameEl.classList.contains('u-me')) return;
-    var name=nameEl.textContent;
-    // หา socket id จาก dmUnread
-  });
+  if(window._userList) updateUsers(window._userList);
+}
+
+function updateUsersSidebar(){
+  if(window._userList) updateUsers(window._userList);
 }
 
 function openDM(user){
@@ -306,16 +301,6 @@ function backToGroup(){
   groupHistory.forEach(function(d){ addMsgToView(d,false); });
   msgs.scrollTop=msgs.scrollHeight;
   updateUsersSidebar();
-}
-
-function updateUsersSidebar(){
-  document.querySelectorAll('.user-item').forEach(function(div){
-    div.classList.remove('dm-active');
-    if(dmTarget){
-      var nameEl=div.querySelector('.u-name');
-      if(nameEl&&nameEl.textContent.trim()===dmTarget.name+' ') div.classList.add('dm-active');
-    }
-  });
 }
 
 function addMsgToView(d, isDm){
