@@ -497,7 +497,12 @@ function startCall(){
       socket.emit('webrtc',{type:'offer',to:dmTarget.id,sdp:pc.localDescription});
       setCallUI(true,'📞 กำลังโทรหา '+dmTarget.name+'...');
     });
-  }).catch(function(){ alert('ไม่สามารถเข้าถึงไมค์ได้ครับ'); });
+  }).catch(function(err){ 
+    var msgs=document.getElementById('msgs');
+    var s=document.createElement('div');s.className='sys';
+    s.textContent='🎤 กรุณาอนุญาตไมค์ในเบราว์เซอร์ก่อนครับ';
+    msgs.appendChild(s);msgs.scrollTop=msgs.scrollHeight;
+  });
 }
 
 function endCall(){
