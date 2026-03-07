@@ -196,14 +196,31 @@ var COLORS=['#e74c3c','#e67e22','#3498db','#9b59b6','#1abc9c','#e91e63','#ff5722
 function nameColor(n){var h=0;for(var i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))&0xffffffff;return COLORS[Math.abs(h)%COLORS.length];}
 function timeNow(){return new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});}
 
+// โหลด history จาก sessionStorage
 var urlRoom=new URLSearchParams(window.location.search).get('room')||'';
 if(urlRoom) document.getElementById('room').value=urlRoom;
+
+function saveHistory(){ 
+  try { 
+    sessionStorage.setItem('chat_group', JSON.stringify(groupHistory.slice(-200)));
+    sessionStorage.setItem('chat_dm', JSON.stringify(dmHistory));
+  } catch(e){} 
+}
+function loadHistory(){
+  try {
+    var g=sessionStorage.getItem('chat_group');
+    var d=sessionStorage.getItem('chat_dm');
+    if(g) groupHistory=JSON.parse(g);
+    if(d) dmHistory=JSON.parse(d);
+  } catch(e){}
+}
 
 // auto-rejoin ถ้า refresh
 (function(){
   var savedName=sessionStorage.getItem('chat_name');
   var savedRoom=sessionStorage.getItem('chat_room');
   if(savedName){
+    loadHistory();
     document.getElementById('name').value=savedName;
     document.getElementById('room').value=savedRoom||'';
     join();
@@ -227,16 +244,21 @@ function join(){
     document.getElementById('room-title').textContent='ห้อง '+roomName;
     document.getElementById('login').style.display='none';
     document.getElementById('chat').style.display='flex';
+    // แสดง history เก่า
+    groupHistory.forEach(function(d){ addMsgToView(d,false); });
+    document.getElementById('msgs').scrollTop=document.getElementById('msgs').scrollHeight;
     document.getElementById('msg').focus();
   });
   socket.on('msg',function(d){
     groupHistory.push(d);
+    saveHistory();
     if(mode==='group') addMsgToView(d,false);
   });
   socket.on('dm',function(d){
     var otherId=d.fromId===myId?d.toId:d.fromId;
     if(!dmHistory[otherId]) dmHistory[otherId]=[];
     dmHistory[otherId].push(d);
+    saveHistory();
     if(mode==='dm'&&dmTarget&&dmTarget.id===otherId){
       addDmToView(d);
     } else if(d.fromId!==myId){
