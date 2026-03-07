@@ -6,6 +6,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Chat">
+<meta name="theme-color" content="#06C755">
+<link rel="manifest" href="/manifest.json">
 <title>Chat</title>
 <script src="/socket.io/socket.io.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -268,6 +271,11 @@ document.addEventListener('keydown',function(e){
   var chat=document.getElementById('chat');
   if(chat.style.display==='none'||chat.style.display==='') join(); else send();
 });
+
+// Register Service Worker (PWA)
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js');
+}
 </script>
 </body>
 </html>
