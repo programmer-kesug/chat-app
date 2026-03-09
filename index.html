@@ -91,7 +91,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 .row { display:flex;align-items:flex-end;gap:6px;animation:fadeUp 0.2s ease; }
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .row.me { flex-direction:row-reverse; }
-.avatar { width:30px;height:30px;border-radius:50%;background:var(--green);color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.15); }
+.avatar { width:30px;height:30px;border-radius:50%;background:var(--green);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.15); }
 .col { max-width:72%;display:flex;flex-direction:column; }
 .row.me .col { align-items:flex-end; }
 .sender { font-size:10px;color:#7a8f9a;margin-bottom:2px;padding-left:2px; }
@@ -448,7 +448,7 @@ function addMsgToView(d, isDm){
   } else {
     var isMe = d.sid===myId || d.user===me;
     var row=document.createElement('div');row.className='row'+(isMe?' me':'');
-    var av=document.createElement('div');av.className='avatar';av.textContent=d.user[0].toUpperCase();
+    var av=document.createElement('div');av.className='avatar';av.textContent=d.user.slice(0,2).toUpperCase();
     if(!isMe) av.style.background=nameColor(d.user);
     var col=document.createElement('div');col.className='col';
     if(!isMe){var sn=document.createElement('div');sn.className='sender';sn.textContent=d.user;col.appendChild(sn);}
@@ -474,7 +474,7 @@ function addDmToView(d){
   var isMe=d.fromId===myId;
   var row=document.createElement('div');row.className='row'+(isMe?' me':'');
   var av=document.createElement('div');av.className='avatar';
-  av.textContent=(isMe?me:d.fromName)[0].toUpperCase();
+  av.textContent=(isMe?me:d.fromName).slice(0,2).toUpperCase();
   if(!isMe) av.style.background='#9b59b6';
   var col=document.createElement('div');col.className='col';
   if(!isMe){var sn=document.createElement('div');sn.className='sender';sn.textContent=d.fromName;col.appendChild(sn);}
