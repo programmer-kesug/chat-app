@@ -142,7 +142,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div class="login-icon">💬</div>
   <h2>เข้าสู่ห้องแชท</h2>
   <p>ตั้งชื่อและเลือกห้องที่ต้องการ</p>
-  <div class="ver">v2.8</div>
+  <div class="ver">v3.0</div>
   <div class="field-wrap">
     <div class="field-label">ชื่อของคุณ</div>
     <input id="name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
@@ -299,6 +299,10 @@ function join(){
     document.getElementById('room-title').dataset.group=displayName;
     document.getElementById('login').style.display='none';
     document.getElementById('chat').style.display='flex';
+    // ล็อกหน้าจอแนวตั้งบน Android
+    if(screen.orientation&&screen.orientation.lock){
+      screen.orientation.lock('portrait').catch(function(){});
+    }
     // แสดง history เก่า
     groupHistory.forEach(function(d){ addMsgToView(d,false); });
     document.getElementById('msgs').scrollTop=document.getElementById('msgs').scrollHeight;
