@@ -22,7 +22,7 @@ jobs:
 
           cutoff = datetime.now(timezone.utc) - timedelta(days=DAYS)
 
-          data = json.dumps({"limit": 1000, "offset": 0}).encode()
+          data = json.dumps({"limit": 1000, "offset": 0, "prefix": ""}).encode()
           req = urllib.request.Request(
               f"{URL}/storage/v1/object/list/{BUCKET}",
               data=data,
