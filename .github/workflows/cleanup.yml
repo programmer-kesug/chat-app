@@ -11,40 +11,40 @@ jobs:
     steps:
       - name: Delete files older than 30 days
         run: |
-          python3 << 'PYEOF'
-          import urllib.request, json, os
+          curl -s "https://gtydphwyvbjsyxqagdsa.supabase.co/storage/v1/object/list/chat-files" \
+            -H "Authorization: Bearer $SUPABASE_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"limit":1000,"offset":0,"prefix":""}' \
+          | python3 -c "
+          import sys, json, os, urllib.request
           from datetime import datetime, timezone, timedelta
 
-          URL = "https://gtydphwyvbjsyxqagdsa.supabase.co"
-          KEY = os.environ["SUPABASE_KEY"]
-          BUCKET = "chat-files"
+          URL = 'https://gtydphwyvbjsyxqagdsa.supabase.co'
+          KEY = os.environ['SUPABASE_KEY']
+          BUCKET = 'chat-files'
           DAYS = 30
 
+          files = json.load(sys.stdin)
           cutoff = datetime.now(timezone.utc) - timedelta(days=DAYS)
-          data = json.dumps({"limit": 1000, "offset": 0, "prefix": ""}).encode()
-          req = urllib.request.Request(
-              f"{URL}/storage/v1/object/list/{BUCKET}",
-              data=data,
-              headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
-          )
-          files = json.loads(urllib.request.urlopen(req).read())
           deleted = 0
+
           for f in files:
-              created = f.get("created_at", "")
+              created = f.get('created_at', '')
               if not created:
                   continue
-              ts = datetime.fromisoformat(created.replace("Z", "+00:00"))
+              ts = datetime.fromisoformat(created.replace('Z', '+00:00'))
               if ts < cutoff:
-                  name = f["name"]
-                  del_req = urllib.request.Request(
-                      f"{URL}/storage/v1/object/{BUCKET}/{name}",
-                      method="DELETE",
-                      headers={"Authorization": f"Bearer {KEY}"}
+                  name = f['name']
+                  req = urllib.request.Request(
+                      f'{URL}/storage/v1/object/{BUCKET}/{name}',
+                      method='DELETE',
+                      headers={'Authorization': f'Bearer {KEY}'}
                   )
-                  urllib.request.urlopen(del_req)
-                  print(f"Deleted: {name}")
+                  urllib.request.urlopen(req)
+                  print(f'Deleted: {name}')
                   deleted += 1
-          print(f"Done. Deleted {deleted} file(s).")
-          PYEOF
+
+          print(f'Done. Deleted {deleted} file(s).')
+          "
         env:
           SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
