@@ -9,7 +9,7 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
-      - name: Delete files older than 30 days
+      - name: Delete files older than 3 days
         run: |
           curl -s "https://gtydphwyvbjsyxqagdsa.supabase.co/storage/v1/object/list/chat-files" \
             -H "Authorization: Bearer $SUPABASE_KEY" \
@@ -22,7 +22,7 @@ jobs:
           URL = 'https://gtydphwyvbjsyxqagdsa.supabase.co'
           KEY = os.environ['SUPABASE_KEY']
           BUCKET = 'chat-files'
-          DAYS = 30
+          DAYS = 3
 
           files = json.load(sys.stdin)
           cutoff = datetime.now(timezone.utc) - timedelta(days=DAYS)
