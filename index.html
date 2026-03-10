@@ -158,7 +158,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div class="login-icon">💬</div>
   <h2>เข้าสู่ห้องแชท</h2>
   <p>ตั้งชื่อและเลือกห้องที่ต้องการ</p>
-  <div class="ver">v3.3</div>
+  <div class="ver">v3.4</div>
   <div class="field-wrap">
     <div class="field-label">ชื่อของคุณ</div>
     <input id="name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
@@ -603,7 +603,7 @@ function uploadFile(input){
   msgs.appendChild(tmp);msgs.scrollTop=msgs.scrollHeight;
 
   var SUPABASE_URL='https://gtydphwyvbjsyxqagdsa.supabase.co';
-  var SUPABASE_KEY='sb_publishable_ZqmHpqHBEU-mJsbjfNVksw_Yruk9EMK';
+  var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0eWRwaHd5dmJqc3l4cWFnZHNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMDczNjcsImV4cCI6MjA4ODY4MzM2N30.Asnl6YLioSrMrvNVwF7NDUKljVi8VgsI9HRwHQtu350';
   var fileName=Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
 
   fetch(SUPABASE_URL+'/storage/v1/object/chat-files/'+fileName,{
