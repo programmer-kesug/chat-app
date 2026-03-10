@@ -604,14 +604,16 @@ function uploadFile(input){
   tmp.textContent='⏳ กำลังอัพโหลด '+file.name+'...';
   msgs.appendChild(tmp);msgs.scrollTop=msgs.scrollHeight;
   var fd=new FormData();
-  fd.append('file',file);
-  fetch('https://file.io/?expires=14d',{method:'POST',body:fd})
-  .then(function(r){return r.json();})
-  .then(function(data){
+  fd.append('reqtype','fileupload');
+  fd.append('fileToUpload',file);
+  fetch('https://catbox.moe/user/api.php',{method:'POST',body:fd})
+  .then(function(r){return r.text();})
+  .then(function(url){
     var el=document.getElementById(tmpId);if(el)el.remove();
-    if(data.success){
+    url=url.trim();
+    if(url.startsWith('https://')){
       var payload={
-        fileUrl:data.link,
+        fileUrl:url,
         fileName:file.name,
         fileSize:formatSize(file.size),
         fileType:file.type
