@@ -158,7 +158,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div class="login-icon">💬</div>
   <h2>เข้าสู่ห้องแชท</h2>
   <p>ตั้งชื่อและเลือกห้องที่ต้องการ</p>
-  <div class="ver">v3.1</div>
+  <div class="ver">v3.3</div>
   <div class="field-wrap">
     <div class="field-label">ชื่อของคุณ</div>
     <input id="name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
@@ -593,41 +593,42 @@ function uploadImgFile(file){
 function uploadFile(input){
   var file=input.files[0]; if(!file||!socket) return;
   input.value='';
-  // ถ้าเป็นรูป ใช้ imgbb
   if(file.type.startsWith('image/')){ uploadImgFile(file); return; }
-  // ไฟล์ทั่วไป ใช้ file.io
-  var maxMB=100;
-  if(file.size>maxMB*1024*1024){ alert('ไฟล์ใหญ่เกิน 100MB ครับ'); return; }
+  var maxMB=50;
+  if(file.size>maxMB*1024*1024){ alert('ไฟล์ใหญ่เกิน 50MB ครับ'); return; }
   var tmpId='tmp_'+Date.now();
   var msgs=document.getElementById('msgs');
   var tmp=document.createElement('div');tmp.className='sys uploading';tmp.id=tmpId;
   tmp.textContent='⏳ กำลังอัพโหลด '+file.name+'...';
   msgs.appendChild(tmp);msgs.scrollTop=msgs.scrollHeight;
-  var fd=new FormData();
-  fd.append('reqtype','fileupload');
-  fd.append('fileToUpload',file);
-  fetch('https://catbox.moe/user/api.php',{method:'POST',body:fd})
-  .then(function(r){return r.text();})
-  .then(function(url){
+
+  var SUPABASE_URL='https://gtydphwyvbjsyxqagdsa.supabase.co';
+  var SUPABASE_KEY='sb_publishable_ZqmHpqHBEU-mJsbjfNVksw_Yruk9EMK';
+  var fileName=Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
+
+  fetch(SUPABASE_URL+'/storage/v1/object/chat-files/'+fileName,{
+    method:'POST',
+    headers:{
+      'Authorization':'Bearer '+SUPABASE_KEY,
+      'Content-Type': file.type||'application/octet-stream',
+      'x-upsert':'true'
+    },
+    body: file
+  })
+  .then(function(r){
+    if(!r.ok) throw new Error('upload failed');
     var el=document.getElementById(tmpId);if(el)el.remove();
-    url=url.trim();
-    if(url.startsWith('https://')){
-      var payload={
-        fileUrl:url,
-        fileName:file.name,
-        fileSize:formatSize(file.size),
-        fileType:file.type
-      };
-      if(mode==='dm'&&dmTarget){
-        socket.emit('dm',{toId:dmTarget.id,text:'',file:payload});
-      } else {
-        socket.emit('msg',{user:me,text:'',file:payload});
-      }
+    var url=SUPABASE_URL+'/storage/v1/object/public/chat-files/'+fileName;
+    var payload={
+      fileUrl:url,
+      fileName:file.name,
+      fileSize:formatSize(file.size),
+      fileType:file.type
+    };
+    if(mode==='dm'&&dmTarget){
+      socket.emit('dm',{toId:dmTarget.id,text:'',file:payload});
     } else {
-      var el2=document.getElementById(tmpId);
-      if(!el2){ el2=document.createElement('div');el2.className='sys';msgs.appendChild(el2); }
-      el2.textContent='❌ อัพโหลดไม่สำเร็จ';
-      setTimeout(function(){if(el2)el2.remove();},2000);
+      socket.emit('msg',{user:me,text:'',file:payload});
     }
   })
   .catch(function(){
