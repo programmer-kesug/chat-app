@@ -8,9 +8,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Chat">
 <meta name="theme-color" content="#06C755">
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="manifest.json">
 <title>Chat</title>
-<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root { --green: #06C755; --green-dark: #05a847; }
@@ -130,6 +130,17 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 .ep-emoji { font-size:22px;cursor:pointer;padding:3px;border-radius:6px;line-height:1; }
 #imgbtn { width:34px;height:34px;background:none;border:none;font-size:20px;cursor:pointer;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center; }
 #imgbtn:active{background:#f0f0f0;}
+#filebtn { width:34px;height:34px;background:none;border:none;font-size:20px;cursor:pointer;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center; }
+#filebtn:active{background:#f0f0f0;}
+.bubble-file { display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:16px;cursor:pointer;text-decoration:none; }
+.bubble-file.other { background:white;color:#111;border-bottom-left-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,0.1); }
+.bubble-file.me { background:var(--green);color:white;border-bottom-right-radius:4px;box-shadow:0 2px 8px rgba(6,199,85,0.3); }
+.bubble-file.dm-bubble.other { background:#f0e6ff; }
+.bubble-file.dm-bubble.me { background:#9b59b6; }
+.file-icon { font-size:24px;flex-shrink:0; }
+.file-info { display:flex;flex-direction:column;min-width:0; }
+.file-name { font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px; }
+.file-size { font-size:11px;opacity:0.75; }
 .bubble img { max-width:200px;max-height:200px;border-radius:10px;display:block;cursor:pointer; }
 .uploading { font-size:12px;color:#888;font-style:italic; }
 .typing-indicator { display:none;align-items:center;gap:6px;padding:4px 10px;animation:fadeUp 0.2s ease; }
@@ -147,7 +158,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div class="login-icon">💬</div>
   <h2>เข้าสู่ห้องแชท</h2>
   <p>ตั้งชื่อและเลือกห้องที่ต้องการ</p>
-  <div class="ver">v3.0</div>
+  <div class="ver">v3.1</div>
   <div class="field-wrap">
     <div class="field-label">ชื่อของคุณ</div>
     <input id="name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
@@ -160,7 +171,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div id="name-error"></div>
   <button onclick="join()">เข้าร่วม</button>
   <div class="selling-points">
-    <div class="sp">💬 แชทกลุ่ม • 👤 DM • 🖼️ รูปภาพ • 😊 Emoji • 📞 Voice Call</div>
+    <div class="sp">💬 แชทกลุ่ม • 👤 DM • 🖼️ รูปภาพ • 📎 ไฟล์ • 😊 Emoji • 📞 Voice Call</div>
   </div>
 </div>
 
@@ -208,6 +219,8 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
       <button id="emojibtn" onclick="toggleEmoji()">😊</button>
       <button id="imgbtn" onclick="document.getElementById('imgfile').click()">🖼️</button>
       <input id="imgfile" type="file" accept="image/*" style="display:none" onchange="uploadImg(this)">
+      <button id="filebtn" onclick="document.getElementById('anyfile').click()" title="ส่งไฟล์">📎</button>
+      <input id="anyfile" type="file" style="display:none" onchange="uploadFile(this)">
       <input id="msg" type="text" placeholder="พิมพ์ข้อความ..." autocomplete="off">
       <button id="sendbtn" onclick="send()">
         <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -457,6 +470,12 @@ function addMsgToView(d, isDm){
       bub.className='bubble '+(isMe?'me':'other');
       var img=document.createElement('img');img.src=d.image;img.onclick=function(){window.open(d.image,'_blank');};
       bub.appendChild(img);
+    } else if(d.file){
+      var a=document.createElement('a');
+      a.className='bubble-file '+(isMe?'me':'other');
+      a.href=d.file.fileUrl;a.target='_blank';a.rel='noopener';
+      a.innerHTML='<div class="file-icon">'+getFileIcon(d.file.fileType,d.file.fileName)+'</div><div class="file-info"><div class="file-name">'+d.file.fileName+'</div><div class="file-size">'+d.file.fileSize+' • แตะเพื่อดาวน์โหลด</div></div>';
+      bub=a;
     } else {
       bub.className='bubble '+(isMe?'me':'other')+(d.sticker?' sticker':'');
       bub.textContent=d.text;
@@ -483,6 +502,12 @@ function addDmToView(d){
     bub.className='bubble dm-bubble '+(isMe?'me':'other');
     var img=document.createElement('img');img.src=d.image;img.onclick=function(){window.open(d.image,'_blank');};
     bub.appendChild(img);
+  } else if(d.file){
+    var a=document.createElement('a');
+    a.className='bubble-file dm-bubble '+(isMe?'me':'other');
+    a.href=d.file.fileUrl;a.target='_blank';a.rel='noopener';
+    a.innerHTML='<div class="file-icon">'+getFileIcon(d.file.fileType,d.file.fileName)+'</div><div class="file-info"><div class="file-name">'+d.file.fileName+'</div><div class="file-size">'+d.file.fileSize+' • แตะเพื่อดาวน์โหลด</div></div>';
+    bub=a;
   } else {
     bub.className='bubble dm-bubble '+(isMe?'me':'other')+(d.sticker?' sticker':'');
     bub.textContent=d.text;
@@ -565,7 +590,68 @@ function uploadImgFile(file){
   reader.readAsDataURL(file);
 }
 
-// ── WebRTC Voice Call ──
+function uploadFile(input){
+  var file=input.files[0]; if(!file||!socket) return;
+  input.value='';
+  // ถ้าเป็นรูป ใช้ imgbb
+  if(file.type.startsWith('image/')){ uploadImgFile(file); return; }
+  // ไฟล์ทั่วไป ใช้ file.io
+  var maxMB=100;
+  if(file.size>maxMB*1024*1024){ alert('ไฟล์ใหญ่เกิน 100MB ครับ'); return; }
+  var tmpId='tmp_'+Date.now();
+  var msgs=document.getElementById('msgs');
+  var tmp=document.createElement('div');tmp.className='sys uploading';tmp.id=tmpId;
+  tmp.textContent='⏳ กำลังอัพโหลด '+file.name+'...';
+  msgs.appendChild(tmp);msgs.scrollTop=msgs.scrollHeight;
+  var fd=new FormData();
+  fd.append('file',file);
+  fetch('https://file.io/?expires=14d',{method:'POST',body:fd})
+  .then(function(r){return r.json();})
+  .then(function(data){
+    var el=document.getElementById(tmpId);if(el)el.remove();
+    if(data.success){
+      var payload={
+        fileUrl:data.link,
+        fileName:file.name,
+        fileSize:formatSize(file.size),
+        fileType:file.type
+      };
+      if(mode==='dm'&&dmTarget){
+        socket.emit('dm',{toId:dmTarget.id,text:'',file:payload});
+      } else {
+        socket.emit('msg',{user:me,text:'',file:payload});
+      }
+    } else {
+      var el2=document.getElementById(tmpId);
+      if(!el2){ el2=document.createElement('div');el2.className='sys';msgs.appendChild(el2); }
+      el2.textContent='❌ อัพโหลดไม่สำเร็จ';
+      setTimeout(function(){if(el2)el2.remove();},2000);
+    }
+  })
+  .catch(function(){
+    var el=document.getElementById(tmpId);
+    if(el) el.textContent='❌ อัพโหลดไม่สำเร็จ';
+    setTimeout(function(){if(el)el.remove();},2000);
+  });
+}
+
+function formatSize(bytes){
+  if(bytes<1024) return bytes+'B';
+  if(bytes<1024*1024) return (bytes/1024).toFixed(1)+'KB';
+  return (bytes/1024/1024).toFixed(1)+'MB';
+}
+
+function getFileIcon(type,name){
+  if(!type) type='';
+  if(type.startsWith('image/')) return '🖼️';
+  if(type.startsWith('video/')) return '🎬';
+  if(type.startsWith('audio/')) return '🎵';
+  if(type.includes('pdf')) return '📄';
+  if(type.includes('word')||name.endsWith('.doc')||name.endsWith('.docx')) return '📝';
+  if(type.includes('excel')||name.endsWith('.xls')||name.endsWith('.xlsx')) return '📊';
+  if(type.includes('zip')||type.includes('rar')||name.endsWith('.zip')||name.endsWith('.rar')) return '🗜️';
+  return '📎';
+}
 var pc=null, localStream=null, callPeer=null;
 var ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'}]};
 
@@ -679,7 +765,7 @@ document.addEventListener('paste',function(e){
   }
 });
 
-if('serviceWorker' in navigator){ navigator.serviceWorker.register('/sw.js'); }
+if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
 </script>
 </body>
 </html>
