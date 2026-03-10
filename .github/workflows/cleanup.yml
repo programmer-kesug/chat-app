@@ -1,0 +1,53 @@
+name: Cleanup Supabase Storage
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # ทุกคืน 2:00 UTC = 9:00 เช้าไทย
+  workflow_dispatch:       # กดรันมือได้ด้วย
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete files older than 30 days
+        run: |
+          python3 << 'EOF'
+          import urllib.request, json, os
+          from datetime import datetime, timezone, timedelta
+
+          URL = "https://gtydphwyvbjsyxqagdsa.supabase.co"
+          KEY = os.environ["SUPABASE_KEY"]
+          BUCKET = "chat-files"
+          DAYS = 30
+
+          cutoff = datetime.now(timezone.utc) - timedelta(days=DAYS)
+
+          data = json.dumps({"limit": 1000, "offset": 0}).encode()
+          req = urllib.request.Request(
+              f"{URL}/storage/v1/object/list/{BUCKET}",
+              data=data,
+              headers={"Authorization": f"Bearer {KEY}", "Content-Type": "application/json"}
+          )
+          files = json.loads(urllib.request.urlopen(req).read())
+
+          deleted = 0
+          for f in files:
+              created = f.get("created_at", "")
+              if not created:
+                  continue
+              ts = datetime.fromisoformat(created.replace("Z", "+00:00"))
+              if ts < cutoff:
+                  name = f["name"]
+                  del_req = urllib.request.Request(
+                      f"{URL}/storage/v1/object/{BUCKET}/{name}",
+                      method="DELETE",
+                      headers={"Authorization": f"Bearer {KEY}"}
+                  )
+                  urllib.request.urlopen(del_req)
+                  print(f"Deleted: {name}")
+                  deleted += 1
+
+          print(f"Done. Deleted {deleted} file(s) older than {DAYS} days.")
+          EOF
+        env:
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
