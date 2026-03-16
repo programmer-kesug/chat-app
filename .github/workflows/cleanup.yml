@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Delete files older than 3 days
         run: |
-          curl -s "https://gtydphwyvbjsyxqagdsa.supabase.co/storage/v1/object/list/chat-files" \
+          curl -s -X POST "https://gtydphwyvbjsyxqagdsa.supabase.co/storage/v1/object/list/chat-files" \
             -H "Authorization: Bearer $SUPABASE_KEY" \
             -H "Content-Type: application/json" \
             -d '{"limit":1000,"offset":0,"prefix":""}' \
