@@ -1,10 +1,8 @@
 name: Cleanup Supabase Storage
-
 on:
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
-
 jobs:
   cleanup:
     runs-on: ubuntu-latest
@@ -16,18 +14,17 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"limit":1000,"offset":0,"prefix":""}' \
           | python3 -c "
-          import sys, json, os, urllib.request
+          import sys, json, os, urllib.request, urllib.parse
           from datetime import datetime, timezone, timedelta
-
           URL = 'https://gtydphwyvbjsyxqagdsa.supabase.co'
           KEY = os.environ['SUPABASE_KEY']
           BUCKET = 'chat-files'
           DAYS = 3
-
-          files = json.load(sys.stdin)
+          raw = sys.stdin.read()
+          print('Response:', raw[:300], file=sys.stderr)
+          files = json.loads(raw)
           cutoff = datetime.now(timezone.utc) - timedelta(days=DAYS)
           deleted = 0
-
           for f in files:
               created = f.get('created_at', '')
               if not created:
@@ -35,15 +32,18 @@ jobs:
               ts = datetime.fromisoformat(created.replace('Z', '+00:00'))
               if ts < cutoff:
                   name = f['name']
+                  encoded = urllib.parse.quote(name, safe='')
                   req = urllib.request.Request(
-                      f'{URL}/storage/v1/object/{BUCKET}/{name}',
+                      f'{URL}/storage/v1/object/{BUCKET}/{encoded}',
                       method='DELETE',
                       headers={'Authorization': f'Bearer {KEY}'}
                   )
-                  urllib.request.urlopen(req)
-                  print(f'Deleted: {name}')
-                  deleted += 1
-
+                  try:
+                      urllib.request.urlopen(req)
+                      print(f'Deleted: {name}')
+                      deleted += 1
+                  except Exception as e:
+                      print(f'Failed: {name} | {e}')
           print(f'Done. Deleted {deleted} file(s).')
           "
         env:
