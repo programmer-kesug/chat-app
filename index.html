@@ -13,7 +13,7 @@
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root { --green: #06C755; --green-dark: #05a847; }
+:root { --green: #06C755; --green-dark: #05a847; --ai-color: #2563eb; --ai-light: #eff6ff; --ai-border: #bfdbfe; }
 * { margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent; }
 html,body { height:100%;height:100dvh;overflow:hidden;position:fixed;width:100%;touch-action:manipulation; }
 body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;justify-content:center;align-items:center;background-image:radial-gradient(ellipse at 20% 50%,rgba(6,199,85,0.12) 0%,transparent 60%); }
@@ -35,7 +35,6 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,0.4)}50%{box-shadow:0 0 0 8px rgba(231,76,60,0)}}
 .call-banner{background:#e74c3c;padding:8px 14px;font-size:12px;color:white;display:none;align-items:center;gap:8px;flex-shrink:0;}
 .call-banner.show{display:flex;}
-.call-banner span{flex:1;}
 #remoteAudio{display:none;}
 .field-label{font-size:12px;color:#888;text-align:left;margin-bottom:5px;padding-left:2px;}
 .field-wrap{margin-bottom:12px;}
@@ -67,6 +66,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 .user-item:hover { background:rgba(255,255,255,0.08); }
 .user-item.dm-active { background:rgba(6,199,85,0.2); }
 .u-dot { width:7px;height:7px;background:var(--green);border-radius:50%;flex-shrink:0;box-shadow:0 0 6px rgba(6,199,85,0.6); }
+.u-dot.ai-dot { background:var(--ai-color);box-shadow:0 0 6px rgba(37,99,235,0.6); }
 .u-name { color:rgba(255,255,255,0.85);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .u-me { color:var(--green)!important;font-weight:600; }
 .u-badge { background:#e74c3c;color:white;font-size:10px;font-weight:700;border-radius:10px;padding:1px 5px;margin-left:auto;flex-shrink:0; }
@@ -92,17 +92,96 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .row.me { flex-direction:row-reverse; }
 .avatar { width:30px;height:30px;border-radius:50%;background:var(--green);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.15); }
+.avatar.ai-avatar { background:var(--ai-color);font-size:14px; }
 .col { max-width:72%;display:flex;flex-direction:column; }
 .row.me .col { align-items:flex-end; }
 .sender { font-size:10px;color:#7a8f9a;margin-bottom:2px;padding-left:2px; }
+.sender.ai-sender { color:var(--ai-color);font-weight:600; }
 .bubble { padding:8px 12px;border-radius:16px;font-size:14px;line-height:1.5;word-break:break-word; }
 .bubble.other { background:white;color:#111;border-bottom-left-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,0.1); }
 .bubble.me { background:var(--green);color:white;border-bottom-right-radius:4px;box-shadow:0 2px 8px rgba(6,199,85,0.3); }
 .bubble.sticker { background:none!important;box-shadow:none!important;font-size:48px;padding:2px; }
 .bubble.dm-bubble.other { background:#f0e6ff;border-bottom-left-radius:4px; }
 .bubble.dm-bubble.me { background:#9b59b6;border-bottom-right-radius:4px; }
-.time { font-size:10px;color:#9aabb4;margin-top:2px;padding:0 2px; }
-.row.me .time { text-align:right; }
+
+/* AI BUBBLE */
+.bubble.ai-bubble {
+  background:var(--ai-light);
+  color:#1e3a5f;
+  border:1px solid var(--ai-border);
+  border-bottom-left-radius:4px;
+  box-shadow:0 2px 8px rgba(37,99,235,0.12);
+  max-width:100%;
+  position:relative;
+}
+.ai-thinking {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px;
+  background:var(--ai-light);
+  border:1px solid var(--ai-border);
+  border-radius:16px;
+  border-bottom-left-radius:4px;
+  font-size:12px;
+  color:var(--ai-color);
+  animation:fadeUp 0.2s ease;
+}
+.ai-thinking-dots span {
+  display:inline-block;width:5px;height:5px;background:var(--ai-color);border-radius:50%;margin:0 1.5px;
+  animation:tdot 1.2s infinite;
+}
+.ai-thinking-dots span:nth-child(2){animation-delay:0.2s}
+.ai-thinking-dots span:nth-child(3){animation-delay:0.4s}
+
+/* AI Key Modal */
+#ai-key-modal {
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.5);
+  z-index:1000;
+  align-items:center;
+  justify-content:center;
+  animation:fadeIn 0.2s ease;
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+#ai-key-modal.show { display:flex; }
+.modal-box {
+  background:white;
+  border-radius:20px;
+  padding:28px 24px;
+  width:min(360px,90vw);
+  box-shadow:0 24px 60px rgba(0,0,0,0.25);
+  animation:popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.modal-box h3 { font-size:18px;font-weight:700;color:#111;margin-bottom:6px; }
+.modal-box p { font-size:13px;color:#666;margin-bottom:16px;line-height:1.5; }
+.modal-box input {
+  width:100%;padding:11px 14px;border:2px solid #eee;border-radius:10px;
+  font-size:14px;font-family:'Noto Sans Thai',sans-serif;outline:none;
+  transition:border-color 0.2s;background:#fafafa;color:#111;margin-bottom:8px;
+}
+.modal-box input:focus{border-color:var(--ai-color);background:white;}
+.modal-hint { font-size:11px;color:#aaa;margin-bottom:14px; }
+.modal-hint a { color:var(--ai-color);text-decoration:none; }
+.modal-btns { display:flex;gap:8px; }
+.modal-btns button {
+  flex:1;padding:11px;border:none;border-radius:10px;
+  font-size:14px;font-weight:700;font-family:'Noto Sans Thai',sans-serif;cursor:pointer;transition:all 0.15s;
+}
+.btn-cancel { background:#f0f0f0;color:#666; }
+.btn-cancel:hover { background:#e0e0e0; }
+.btn-save { background:var(--ai-color);color:white;box-shadow:0 3px 10px rgba(37,99,235,0.3); }
+.btn-save:hover { background:#1d4ed8; }
+
+/* AI hint tooltip */
+.ai-hint {
+  font-size:11px;color:var(--ai-color);background:var(--ai-light);
+  border:1px solid var(--ai-border);border-radius:10px;
+  padding:4px 10px;margin:0 10px 4px;
+  display:none;align-items:center;gap:4px;flex-shrink:0;
+}
+.ai-hint.show { display:flex; }
 
 /* DM banner */
 .dm-banner { background:#f0e6ff;border-bottom:1px solid #d9b8ff;padding:8px 14px;font-size:12px;color:#7d3c98;display:none;align-items:center;gap:8px;flex-shrink:0; }
@@ -115,9 +194,12 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 #msg:focus { border-color:var(--green);background:white; }
 #msg.dm-mode { border-color:#9b59b6; }
 #msg.dm-mode:focus { border-color:#7d3c98;box-shadow:0 0 0 3px rgba(155,89,182,0.12); }
+#msg.ai-mode { border-color:var(--ai-color);background:#f0f7ff; }
+#msg.ai-mode:focus { border-color:var(--ai-color);box-shadow:0 0 0 3px rgba(37,99,235,0.12); }
 #emojibtn { width:34px;height:34px;background:none;border:none;font-size:20px;cursor:pointer;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center; }
 #sendbtn { width:38px;height:38px;background:var(--green);border:none;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 3px 10px rgba(6,199,85,0.4);flex-shrink:0;transition:background 0.2s; }
 #sendbtn.dm-mode { background:#9b59b6;box-shadow:0 3px 10px rgba(155,89,182,0.4); }
+#sendbtn.ai-mode { background:var(--ai-color);box-shadow:0 3px 10px rgba(37,99,235,0.4); }
 #sendbtn:active { transform:scale(0.9); }
 #sendbtn svg { width:16px;height:16px;fill:white;margin-left:2px; }
 
@@ -132,6 +214,16 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 #imgbtn:active{background:#f0f0f0;}
 #filebtn { width:34px;height:34px;background:none;border:none;font-size:20px;cursor:pointer;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center; }
 #filebtn:active{background:#f0f0f0;}
+
+/* AI settings button */
+#aibtn { width:34px;height:34px;background:none;border:none;font-size:18px;cursor:pointer;flex-shrink:0;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative; }
+#aibtn:active{background:#f0f0f0;}
+#aibtn .ai-key-dot {
+  position:absolute;bottom:4px;right:4px;width:7px;height:7px;
+  border-radius:50%;background:#ccc;border:1.5px solid white;
+}
+#aibtn .ai-key-dot.ready { background:#22c55e; }
+
 .bubble-file { display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:16px;cursor:pointer;text-decoration:none; }
 .bubble-file.other { background:white;color:#111;border-bottom-left-radius:4px;box-shadow:0 1px 4px rgba(0,0,0,0.1); }
 .bubble-file.me { background:var(--green);color:white;border-bottom-right-radius:4px;box-shadow:0 2px 8px rgba(6,199,85,0.3); }
@@ -158,7 +250,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div class="login-icon">💬</div>
   <h2>เข้าสู่ห้องแชท</h2>
   <p>ตั้งชื่อและเลือกห้องที่ต้องการ</p>
-  <div class="ver">v3.5</div>
+  <div class="ver">v3.6 ✨AI</div>
   <div class="field-wrap">
     <div class="field-label">ชื่อของคุณ</div>
     <input id="name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
@@ -171,7 +263,21 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   <div id="name-error"></div>
   <button onclick="join()">เข้าร่วม</button>
   <div class="selling-points">
-    <div class="sp">💬 แชทกลุ่ม • 👤 DM • 🖼️ รูปภาพ • 📎 ไฟล์ • 😊 Emoji • 📞 Voice Call</div>
+    <div class="sp">💬 แชทกลุ่ม • 👤 DM • 🖼️ รูปภาพ • 📎 ไฟล์ • 😊 Emoji • 📞 Voice Call • 🤖 AI</div>
+  </div>
+</div>
+
+<!-- AI Key Modal -->
+<div id="ai-key-modal">
+  <div class="modal-box">
+    <h3>🤖 ตั้งค่า AI</h3>
+    <p>ใส่ Anthropic API Key เพื่อใช้ <code style="background:#f0f7ff;padding:1px 5px;border-radius:4px;font-size:12px;color:#2563eb">@AI</code> หรือ <code style="background:#f0f7ff;padding:1px 5px;border-radius:4px;font-size:12px;color:#2563eb">/ai</code> ในห้องแชท</p>
+    <input id="api-key-input" type="password" placeholder="sk-ant-api03-..." autocomplete="off">
+    <div class="modal-hint">🔑 รับ API Key ได้ที่ <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a> • Key จะเก็บใน localStorage ของคุณเท่านั้น</div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeKeyModal()">ยกเลิก</button>
+      <button class="btn-save" onclick="saveApiKey()">บันทึก</button>
+    </div>
   </div>
 </div>
 
@@ -203,6 +309,10 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
       <span id="dm-banner-text">💬 DM กับ ...</span>
       <button onclick="backToGroup()" style="background:none;border:none;color:#7d3c98;cursor:pointer;font-size:12px;">✕ ปิด</button>
     </div>
+    <!-- AI hint bar -->
+    <div class="ai-hint" id="ai-hint">
+      🤖 <span id="ai-hint-text">พิมพ์ /ai [คำถาม] หรือ @AI [คำถาม] เพื่อถาม AI</span>
+    </div>
     <div id="msgs"></div>
     <div class="typing-indicator" id="typing-indicator">
       <div class="typing-dots"><span></span><span></span><span></span></div>
@@ -221,6 +331,11 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
       <input id="imgfile" type="file" accept="image/*" style="display:none" onchange="uploadImg(this)">
       <button id="filebtn" onclick="document.getElementById('anyfile').click()" title="ส่งไฟล์">📎</button>
       <input id="anyfile" type="file" style="display:none" onchange="uploadFile(this)">
+      <!-- AI Button -->
+      <button id="aibtn" onclick="openKeyModal()" title="ตั้งค่า AI">
+        🤖
+        <span class="ai-key-dot" id="ai-key-dot"></span>
+      </button>
       <input id="msg" type="text" placeholder="พิมพ์ข้อความ..." autocomplete="off">
       <button id="sendbtn" onclick="send()">
         <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -239,16 +354,208 @@ var mode = 'group';
 var typingTimer = null;
 var typingUsers = {};
 
-// เสียงแจ้งเตือน (สร้างจาก Web Audio API ไม่ต้องโหลดไฟล์)
+// ─── AI CONFIG ───────────────────────────────────────────────
+var AI_NAME = 'AI Assistant';
+var AI_KEY_STORAGE = 'chat_ai_key';
+var aiThinkingEl = null; // placeholder element while AI is thinking
+
+function getApiKey(){ return localStorage.getItem(AI_KEY_STORAGE)||''; }
+function hasApiKey(){ return !!getApiKey(); }
+
+function openKeyModal(){
+  document.getElementById('api-key-input').value = getApiKey();
+  document.getElementById('ai-key-modal').classList.add('show');
+  setTimeout(function(){ document.getElementById('api-key-input').focus(); }, 100);
+}
+function closeKeyModal(){
+  document.getElementById('ai-key-modal').classList.remove('show');
+}
+function saveApiKey(){
+  var key = document.getElementById('api-key-input').value.trim();
+  if(key){
+    localStorage.setItem(AI_KEY_STORAGE, key);
+    updateAiStatus();
+    closeKeyModal();
+    // Show tip
+    var s=document.createElement('div');s.className='sys';
+    s.textContent='🤖 AI พร้อมใช้งานแล้ว! พิมพ์ /ai [คำถาม] หรือ @AI [คำถาม]';
+    document.getElementById('msgs').appendChild(s);
+    document.getElementById('msgs').scrollTop=document.getElementById('msgs').scrollHeight;
+    document.getElementById('ai-hint').classList.add('show');
+  } else {
+    localStorage.removeItem(AI_KEY_STORAGE);
+    updateAiStatus();
+    closeKeyModal();
+  }
+}
+function updateAiStatus(){
+  var dot = document.getElementById('ai-key-dot');
+  if(hasApiKey()){ dot.classList.add('ready'); } 
+  else { dot.classList.remove('ready'); }
+}
+
+// ─── Detect AI trigger in message ────────────────────────────
+// Returns { isAI: bool, question: string }
+function detectAI(text){
+  // /ai [question]
+  var m1 = text.match(/^\/ai\s+([\s\S]+)/i);
+  if(m1) return { isAI:true, question:m1[1].trim() };
+  // @AI [question]  or  @ai [question]
+  var m2 = text.match(/^@ai\s+([\s\S]+)/i);
+  if(m2) return { isAI:true, question:m2[1].trim() };
+  // anywhere in text: @AI something
+  var m3 = text.match(/@ai\s+([\s\S]+)/i);
+  if(m3) return { isAI:true, question:m3[1].trim() };
+  return { isAI:false };
+}
+
+// ─── Build context from recent group history ──────────────────
+function buildContext(limit){
+  limit = limit||20;
+  var hist = groupHistory.slice(-limit).filter(function(d){ return d.user!=='System' && d.text; });
+  if(!hist.length) return '';
+  return hist.map(function(d){ return d.user+': '+d.text; }).join('\n');
+}
+
+// ─── Show AI "thinking" bubble ────────────────────────────────
+function showAiThinking(){
+  var msgs = document.getElementById('msgs');
+  var row = document.createElement('div'); row.className='row'; row.id='ai-thinking-row';
+  var av = document.createElement('div'); av.className='avatar ai-avatar'; av.textContent='🤖';
+  var col = document.createElement('div'); col.className='col';
+  var sn = document.createElement('div'); sn.className='sender ai-sender'; sn.textContent=AI_NAME;
+  var thinking = document.createElement('div'); thinking.className='ai-thinking';
+  thinking.innerHTML='<div class="ai-thinking-dots"><span></span><span></span><span></span></div><span>กำลังคิด...</span>';
+  col.appendChild(sn); col.appendChild(thinking);
+  row.appendChild(av); row.appendChild(col);
+  msgs.appendChild(row);
+  msgs.scrollTop=msgs.scrollHeight;
+  aiThinkingEl = row;
+}
+
+function removeAiThinking(){
+  if(aiThinkingEl){ aiThinkingEl.remove(); aiThinkingEl=null; }
+}
+
+// ─── Call Anthropic API ───────────────────────────────────────
+async function askAI(question, asker){
+  if(!hasApiKey()){
+    openKeyModal();
+    return;
+  }
+  // show question to room first (already sent via socket by send())
+  showAiThinking();
+
+  var context = buildContext(20);
+  var systemPrompt = [
+    'คุณคือ AI Assistant ในห้องแชท ตอบเป็นภาษาไทย กระชับ ชัดเจน และเป็นมิตร',
+    'ห้ามตอบยาวเกิน 3-4 ประโยค ยกเว้นถูกถามให้อธิบายละเอียด',
+    'คุณรู้จักบริบทการสนทนาล่าสุดในห้องด้วย',
+  ].join(' ');
+
+  var userContent = context
+    ? asker+' ถามว่า: "'+question+'"\n\n[บริบทการสนทนาล่าสุดในห้อง (ไม่จำเป็นต้องอ้างถึงถ้าไม่เกี่ยวข้อง)]\n'+context
+    : question;
+
+  try {
+    var res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': getApiKey(),
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:600,
+        system: systemPrompt,
+        messages:[{ role:'user', content:userContent }]
+      })
+    });
+
+    removeAiThinking();
+
+    if(!res.ok){
+      var err = await res.json().catch(function(){return {};});
+      var errMsg = (err.error&&err.error.message)||'เกิดข้อผิดพลาด ('+res.status+')';
+      if(res.status===401) errMsg='API Key ไม่ถูกต้อง กรุณาตรวจสอบใหม่';
+      addAiMessage('❌ '+errMsg, true);
+      return;
+    }
+
+    var data = await res.json();
+    var answer = data.content && data.content[0] && data.content[0].text;
+    if(answer){
+      // Broadcast AI answer to room via socket so everyone sees it
+      if(socket){
+        socket.emit('msg',{ user:AI_NAME, text:answer, isAI:true, sid:'__ai__' });
+      } else {
+        addAiMessage(answer, false);
+      }
+    }
+  } catch(e){
+    removeAiThinking();
+    addAiMessage('❌ ไม่สามารถเชื่อมต่อ AI ได้: '+e.message, true);
+  }
+}
+
+// ─── Render AI message locally (fallback / error) ────────────
+function addAiMessage(text, isError){
+  var msgs=document.getElementById('msgs');
+  var row=document.createElement('div'); row.className='row';
+  var av=document.createElement('div'); av.className='avatar ai-avatar'; av.textContent='🤖';
+  var col=document.createElement('div'); col.className='col';
+  var sn=document.createElement('div'); sn.className='sender ai-sender'; sn.textContent=AI_NAME;
+  var bub=document.createElement('div');
+  bub.className='bubble ai-bubble';
+  if(isError) bub.style.cssText='background:#fff0f0;border-color:#fecaca;color:#991b1b;';
+  bub.textContent=text;
+  var tm=document.createElement('div'); tm.className='time'; tm.textContent=timeNow();
+  col.appendChild(sn); col.appendChild(bub); col.appendChild(tm);
+  row.appendChild(av); row.appendChild(col);
+  msgs.appendChild(row);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+// ─── Handle incoming msg: check if it's from AI ──────────────
+function isAiMsg(d){ return d.user===AI_NAME || d.isAI; }
+
+// ─── AI hint on input ─────────────────────────────────────────
+function checkAiHint(val){
+  var lower = val.toLowerCase();
+  var isAiPrefix = lower.startsWith('/ai') || lower.startsWith('@ai');
+  var hint = document.getElementById('ai-hint');
+  var hintText = document.getElementById('ai-hint-text');
+  var msgEl = document.getElementById('msg');
+  var sendEl = document.getElementById('sendbtn');
+
+  if(isAiPrefix && val.trim().length>3){
+    hint.classList.add('show');
+    hintText.textContent='🤖 AI จะตอบในห้องนี้ ทุกคนเห็น';
+    msgEl.classList.add('ai-mode'); msgEl.classList.remove('dm-mode');
+    sendEl.classList.add('ai-mode');
+  } else if(hasApiKey()){
+    hint.classList.add('show');
+    hintText.textContent='พิมพ์ /ai [คำถาม] หรือ @AI [คำถาม] เพื่อถาม AI ในห้อง';
+    msgEl.classList.remove('ai-mode');
+    sendEl.classList.remove('ai-mode');
+  } else {
+    hint.classList.remove('show');
+    msgEl.classList.remove('ai-mode');
+    sendEl.classList.remove('ai-mode');
+  }
+}
+
+// ─── เสียงแจ้งเตือน ────────────────────────────────────────
 function playNotify(){
   try {
-    var ctx = new (window.AudioContext||window.webkitAudioContext)();
-    var o = ctx.createOscillator();
-    var g = ctx.createGain();
+    var ctx=new (window.AudioContext||window.webkitAudioContext)();
+    var o=ctx.createOscillator(); var g=ctx.createGain();
     o.connect(g); g.connect(ctx.destination);
-    o.frequency.value = 880;
-    g.gain.setValueAtTime(0.3, ctx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+0.3);
+    o.frequency.value=880;
+    g.gain.setValueAtTime(0.3,ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.3);
     o.start(ctx.currentTime); o.stop(ctx.currentTime+0.3);
   } catch(e){}
 }
@@ -263,11 +570,15 @@ function insertEmoji(e){ var inp=document.getElementById('msg'); inp.value+=e; i
 function sendSticker(e){ if(!socket) return; if(mode==='dm'&&dmTarget){ socket.emit('dm',{toId:dmTarget.id,text:e,sticker:true}); }else{ socket.emit('msg',{user:me,text:e,sticker:true}); } document.getElementById('emojipanel').classList.remove('show'); }
 document.addEventListener('click',function(e){ if(!e.target.closest('#emojibtn')&&!e.target.closest('#emojipanel')) document.getElementById('emojipanel').classList.remove('show'); });
 
+// close modal on backdrop click
+document.addEventListener('click',function(e){ 
+  if(e.target===document.getElementById('ai-key-modal')) closeKeyModal(); 
+});
+
 var COLORS=['#e74c3c','#e67e22','#3498db','#9b59b6','#1abc9c','#e91e63','#ff5722','#607d8b'];
 function nameColor(n){var h=0;for(var i=0;i<n.length;i++)h=(h*31+n.charCodeAt(i))&0xffffffff;return COLORS[Math.abs(h)%COLORS.length];}
 function timeNow(){return new Date().toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'});}
 
-// โหลด history จาก sessionStorage
 var urlRoom=new URLSearchParams(window.location.search).get('room')||'';
 if(urlRoom) document.getElementById('room').value=urlRoom;
 
@@ -286,7 +597,6 @@ function loadHistory(){
   } catch(e){}
 }
 
-// auto-rejoin ถ้า refresh
 (function(){
   var savedName=sessionStorage.getItem('chat_name');
   var savedRoom=sessionStorage.getItem('chat_room');
@@ -317,20 +627,23 @@ function join(){
     document.getElementById('room-title').dataset.group=displayName;
     document.getElementById('login').style.display='none';
     document.getElementById('chat').style.display='flex';
-    // ล็อกหน้าจอแนวตั้งบน Android
-    if(screen.orientation&&screen.orientation.lock){
-      screen.orientation.lock('portrait').catch(function(){});
-    }
-    // แสดง history เก่า
+    if(screen.orientation&&screen.orientation.lock){ screen.orientation.lock('portrait').catch(function(){}); }
     groupHistory.forEach(function(d){ addMsgToView(d,false); });
     document.getElementById('msgs').scrollTop=document.getElementById('msgs').scrollHeight;
     document.getElementById('msg').focus();
+    updateAiStatus();
+    // Show AI hint if key is set
+    if(hasApiKey()) document.getElementById('ai-hint').classList.add('show');
   });
   socket.on('msg',function(d){
     groupHistory.push(d);
     saveHistory();
-    if(mode==='group') addMsgToView(d,false);
-    if(d.user!=='System' && d.sid!==myId) playNotify();
+    if(mode==='group'){
+      // remove thinking bubble if AI message arrives
+      if(isAiMsg(d)) removeAiThinking();
+      addMsgToView(d,false);
+    }
+    if(d.user!=='System' && d.sid!==myId && !isAiMsg(d)) playNotify();
   });
   socket.on('dm',function(d){
     var otherId=d.fromId===myId?d.toId:d.fromId;
@@ -347,17 +660,10 @@ function join(){
     }
   });
   socket.on('typing',function(d){
-    if(d.typing){
-      typingUsers[d.name]=true;
-    } else {
-      delete typingUsers[d.name];
-    }
+    if(d.typing){ typingUsers[d.name]=true; } else { delete typingUsers[d.name]; }
     updateTyping();
   });
-  socket.on('users',function(list){ 
-    window._userList = list;
-    updateUsers(list); 
-  });
+  socket.on('users',function(list){ window._userList=list; updateUsers(list); });
   socket.on('webrtc',function(d){ handleWebRTC(d); });
 }
 
@@ -379,57 +685,47 @@ function updateTyping(){
   var names=Object.keys(typingUsers);
   var el=document.getElementById('typing-indicator');
   var txt=document.getElementById('typing-text');
-  if(names.length>0){
-    txt.textContent=names.join(', ')+' กำลังพิมพ์...';
-    el.classList.add('show');
-  } else {
-    el.classList.remove('show');
-  }
+  if(names.length>0){ txt.textContent=names.join(', ')+' กำลังพิมพ์...'; el.classList.add('show'); }
+  else { el.classList.remove('show'); }
 }
 
 function sendTyping(isTyping){
   if(!socket) return;
-  if(mode==='dm'&&dmTarget){
-    socket.emit('typing',{toId:dmTarget.id,typing:isTyping});
-  } else {
-    socket.emit('typing',{typing:isTyping});
-  }
+  if(mode==='dm'&&dmTarget){ socket.emit('typing',{toId:dmTarget.id,typing:isTyping}); }
+  else { socket.emit('typing',{typing:isTyping}); }
 }
 
 document.addEventListener('DOMContentLoaded',function(){
-  document.getElementById('msg').addEventListener('input',function(){
+  var msgEl = document.getElementById('msg');
+  msgEl.addEventListener('input',function(){
     sendTyping(true);
     clearTimeout(typingTimer);
     typingTimer=setTimeout(function(){ sendTyping(false); },1500);
+    checkAiHint(msgEl.value);
   });
 });
 
-function updateUsersSidebar(){
-  if(window._userList) updateUsers(window._userList);
-}
+function updateUsersSidebar(){ if(window._userList) updateUsers(window._userList); }
 
 function openDM(user){
-  dmTarget=user;
-  mode='dm';
+  dmTarget=user; mode='dm';
   dmUnread[user.id]=0;
-  // update UI
   document.getElementById('room-title').textContent='💬 '+user.name;
   document.getElementById('h-sub-text').textContent='Direct Message';
   document.getElementById('h-avatar').textContent='👤';
   document.getElementById('backbtn').classList.add('show');
   document.getElementById('sharebtn').style.display='none';
+  document.getElementById('ai-hint').classList.remove('show');
   showCallBtn(true);
   document.getElementById('dm-banner').classList.add('show');
   document.getElementById('dm-banner-text').textContent='💬 DM กับ '+user.name+' (คนอื่นไม่เห็น)';
   document.getElementById('msg').classList.add('dm-mode');
   document.getElementById('msg').placeholder='ส่งหา '+user.name+'...';
   document.getElementById('sendbtn').classList.add('dm-mode');
-  // แสดง DM history
   var msgs=document.getElementById('msgs'); msgs.innerHTML='';
   var history=dmHistory[user.id]||[];
   history.forEach(function(d){ addDmToView(d); });
   msgs.scrollTop=msgs.scrollHeight;
-  // update sidebar
   updateUsersSidebar();
 }
 
@@ -447,7 +743,9 @@ function backToGroup(){
   document.getElementById('msg').classList.remove('dm-mode');
   document.getElementById('msg').placeholder='พิมพ์ข้อความ...';
   document.getElementById('sendbtn').classList.remove('dm-mode');
-  // แสดง group history
+  document.getElementById('msg').classList.remove('ai-mode');
+  document.getElementById('sendbtn').classList.remove('ai-mode');
+  if(hasApiKey()) document.getElementById('ai-hint').classList.add('show');
   var msgs=document.getElementById('msgs'); msgs.innerHTML='';
   groupHistory.forEach(function(d){ addMsgToView(d,false); });
   msgs.scrollTop=msgs.scrollHeight;
@@ -460,11 +758,20 @@ function addMsgToView(d, isDm){
     var s=document.createElement('div');s.className='sys';s.textContent=d.text;msgs.appendChild(s);
   } else {
     var isMe = d.sid===myId || d.user===me;
-    var row=document.createElement('div');row.className='row'+(isMe?' me':'');
-    var av=document.createElement('div');av.className='avatar';av.textContent=d.user.slice(0,2).toUpperCase();
-    if(!isMe) av.style.background=nameColor(d.user);
+    var aiMsg = isAiMsg(d);
+    var row=document.createElement('div');row.className='row'+(isMe&&!aiMsg?' me':'');
+    var av=document.createElement('div');
+    av.className='avatar'+(aiMsg?' ai-avatar':'');
+    if(aiMsg){ av.textContent='🤖'; }
+    else { av.textContent=d.user.slice(0,2).toUpperCase(); if(!isMe) av.style.background=nameColor(d.user); }
     var col=document.createElement('div');col.className='col';
-    if(!isMe){var sn=document.createElement('div');sn.className='sender';sn.textContent=d.user;col.appendChild(sn);}
+    // sender name (show for others + always for AI)
+    if(!isMe||aiMsg){
+      var sn=document.createElement('div');
+      sn.className='sender'+(aiMsg?' ai-sender':'');
+      sn.textContent=d.user;
+      col.appendChild(sn);
+    }
     var bub=document.createElement('div');
     if(d.image){
       bub.className='bubble '+(isMe?'me':'other');
@@ -477,12 +784,12 @@ function addMsgToView(d, isDm){
       a.innerHTML='<div class="file-icon">'+getFileIcon(d.file.fileType,d.file.fileName)+'</div><div class="file-info"><div class="file-name">'+d.file.fileName+'</div><div class="file-size">'+d.file.fileSize+' • แตะเพื่อดาวน์โหลด</div></div>';
       bub=a;
     } else {
-      bub.className='bubble '+(isMe?'me':'other')+(d.sticker?' sticker':'');
+      bub.className='bubble '+(aiMsg?'ai-bubble':(isMe?'me':'other'))+(d.sticker?' sticker':'');
       bub.textContent=d.text;
     }
     var tm=document.createElement('div');tm.className='time';tm.textContent=timeNow();
     col.appendChild(bub);col.appendChild(tm);
-    if(isMe){row.appendChild(col);row.appendChild(av);}else{row.appendChild(av);row.appendChild(col);}
+    if(isMe&&!aiMsg){row.appendChild(col);row.appendChild(av);}else{row.appendChild(av);row.appendChild(col);}
     msgs.appendChild(row);
   }
   msgs.scrollTop=msgs.scrollHeight;
@@ -525,40 +832,44 @@ function send(){
   sendTyping(false);
   clearTimeout(typingTimer);
 
-  // ลูกเต๋า
+  // ── ลูกเต๋า ──
   if(t.toLowerCase().startsWith('/roll')){
-    var parts=t.split(' ');
-    var count=parseInt(parts[1])||1;
-    count=Math.min(count,6); // สูงสุด 6 ลูก
-    var results=[];
-    for(var i=0;i<count;i++) results.push(Math.floor(Math.random()*6)+1);
-    var txt = count===1
-      ? '🎲 '+me+' ทอยได้ '+results[0]
-      : '🎲 '+me+' ทอยได้ '+results.join(', ')+' (รวม '+results.reduce(function(a,b){return a+b;},0)+')';
-    if(mode==='dm'&&dmTarget){
-      socket.emit('dm',{toId:dmTarget.id,text:txt});
-    } else {
-      socket.emit('msg',{user:me,text:txt});
-    }
-    document.getElementById('msg').value='';
-    document.getElementById('msg').focus();
+    var parts=t.split(' '); var count=parseInt(parts[1])||1; count=Math.min(count,6);
+    var results=[]; for(var i=0;i<count;i++) results.push(Math.floor(Math.random()*6)+1);
+    var txt=count===1?'🎲 '+me+' ทอยได้ '+results[0]:'🎲 '+me+' ทอยได้ '+results.join(', ')+' (รวม '+results.reduce(function(a,b){return a+b;},0)+')';
+    if(mode==='dm'&&dmTarget){ socket.emit('dm',{toId:dmTarget.id,text:txt}); }
+    else { socket.emit('msg',{user:me,text:txt}); }
+    document.getElementById('msg').value=''; document.getElementById('msg').focus();
+    checkAiHint('');
     return;
   }
-  if(mode==='dm'&&dmTarget){
-    socket.emit('dm',{toId:dmTarget.id,text:t});
-  } else {
-    socket.emit('msg',{user:me,text:t});
+
+  // ── AI command (/ai หรือ @AI) ── เฉพาะ group mode ──
+  if(mode==='group'){
+    var aiCheck = detectAI(t);
+    if(aiCheck.isAI){
+      // ส่ง question ของ user ให้ทุกคนเห็นก่อน
+      socket.emit('msg',{user:me, text:t});
+      document.getElementById('msg').value='';
+      document.getElementById('msg').focus();
+      checkAiHint('');
+      // แล้วค่อยให้ AI ตอบ
+      askAI(aiCheck.question, me);
+      return;
+    }
   }
+
+  if(mode==='dm'&&dmTarget){ socket.emit('dm',{toId:dmTarget.id,text:t}); }
+  else { socket.emit('msg',{user:me,text:t}); }
   document.getElementById('msg').value='';
   document.getElementById('msg').focus();
+  checkAiHint('');
 }
 
 function uploadImg(input){
-  var file=input.files[0]; if(!file||!socket) return;
-  input.value='';
+  var file=input.files[0]; if(!file||!socket) return; input.value='';
   uploadImgFile(file);
 }
-
 function uploadImgFile(file){
   var tmpId='tmp_'+Date.now();
   var msgs=document.getElementById('msgs');
@@ -567,207 +878,120 @@ function uploadImgFile(file){
   var reader=new FileReader();
   reader.onload=function(e){
     var b64=e.target.result.split(',')[1];
-    var fd=new FormData();
-    fd.append('image',b64);
+    var fd=new FormData(); fd.append('image',b64);
     fetch('https://api.imgbb.com/1/upload?key=9c3cae51f07e4cf9afca704b6a7814b6',{method:'POST',body:fd})
     .then(function(r){return r.json();})
     .then(function(data){
       var el=document.getElementById(tmpId);if(el)el.remove();
-      if(data.success){
-        var url=data.data.url;
-        if(mode==='dm'&&dmTarget){
-          socket.emit('dm',{toId:dmTarget.id,text:'',image:url});
-        } else {
-          socket.emit('msg',{user:me,text:'',image:url});
-        }
+      if(data.success){ var url=data.data.url;
+        if(mode==='dm'&&dmTarget){ socket.emit('dm',{toId:dmTarget.id,text:'',image:url}); }
+        else { socket.emit('msg',{user:me,text:'',image:url}); }
       }
     })
-    .catch(function(){
-      var el=document.getElementById(tmpId);if(el)el.textContent='❌ อัพโหลดไม่สำเร็จ';
-      setTimeout(function(){var el=document.getElementById(tmpId);if(el)el.remove();},2000);
-    });
+    .catch(function(){ var el=document.getElementById(tmpId);if(el)el.textContent='❌ อัพโหลดไม่สำเร็จ'; setTimeout(function(){var el=document.getElementById(tmpId);if(el)el.remove();},2000); });
   };
   reader.readAsDataURL(file);
 }
-
 function uploadFile(input){
-  var file=input.files[0]; if(!file||!socket) return;
-  input.value='';
+  var file=input.files[0]; if(!file||!socket) return; input.value='';
   if(file.type.startsWith('image/')){ uploadImgFile(file); return; }
-  var maxMB=50;
-  if(file.size>maxMB*1024*1024){ alert('ไฟล์ใหญ่เกิน 50MB ครับ'); return; }
+  var maxMB=50; if(file.size>maxMB*1024*1024){ alert('ไฟล์ใหญ่เกิน 50MB ครับ'); return; }
   var tmpId='tmp_'+Date.now();
   var msgs=document.getElementById('msgs');
   var tmp=document.createElement('div');tmp.className='sys uploading';tmp.id=tmpId;
   tmp.textContent='⏳ กำลังอัพโหลด '+file.name+'...';
   msgs.appendChild(tmp);msgs.scrollTop=msgs.scrollHeight;
-
   var SUPABASE_URL='https://gtydphwyvbjsyxqagdsa.supabase.co';
   var SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0eWRwaHd5dmJqc3l4cWFnZHNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMDczNjcsImV4cCI6MjA4ODY4MzM2N30.Asnl6YLioSrMrvNVwF7NDUKljVi8VgsI9HRwHQtu350';
   var fileName=Date.now()+'_'+file.name.replace(/[^a-zA-Z0-9._-]/g,'_');
-
   fetch(SUPABASE_URL+'/storage/v1/object/chat-files/'+fileName,{
     method:'POST',
-    headers:{
-      'Authorization':'Bearer '+SUPABASE_KEY,
-      'Content-Type': file.type||'application/octet-stream',
-      'x-upsert':'true'
-    },
-    body: file
+    headers:{'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':file.type||'application/octet-stream','x-upsert':'true'},
+    body:file
   })
-  .then(function(r){
-    if(!r.ok) throw new Error('upload failed');
-    var el=document.getElementById(tmpId);if(el)el.remove();
+  .then(function(r){ if(!r.ok) throw new Error('upload failed'); var el=document.getElementById(tmpId);if(el)el.remove();
     var url=SUPABASE_URL+'/storage/v1/object/public/chat-files/'+fileName;
-    var payload={
-      fileUrl:url,
-      fileName:file.name,
-      fileSize:formatSize(file.size),
-      fileType:file.type
-    };
-    if(mode==='dm'&&dmTarget){
-      socket.emit('dm',{toId:dmTarget.id,text:'',file:payload});
-    } else {
-      socket.emit('msg',{user:me,text:'',file:payload});
-    }
+    var payload={fileUrl:url,fileName:file.name,fileSize:formatSize(file.size),fileType:file.type};
+    if(mode==='dm'&&dmTarget){ socket.emit('dm',{toId:dmTarget.id,text:'',file:payload}); }
+    else { socket.emit('msg',{user:me,text:'',file:payload}); }
   })
-  .catch(function(){
-    var el=document.getElementById(tmpId);
-    if(el) el.textContent='❌ อัพโหลดไม่สำเร็จ';
-    setTimeout(function(){if(el)el.remove();},2000);
-  });
+  .catch(function(){ var el=document.getElementById(tmpId); if(el) el.textContent='❌ อัพโหลดไม่สำเร็จ'; setTimeout(function(){if(el)el.remove();},2000); });
 }
-
-function formatSize(bytes){
-  if(bytes<1024) return bytes+'B';
-  if(bytes<1024*1024) return (bytes/1024).toFixed(1)+'KB';
-  return (bytes/1024/1024).toFixed(1)+'MB';
-}
-
+function formatSize(bytes){ if(bytes<1024) return bytes+'B'; if(bytes<1024*1024) return (bytes/1024).toFixed(1)+'KB'; return (bytes/1024/1024).toFixed(1)+'MB'; }
 function getFileIcon(type,name){
   if(!type) type='';
-  if(type.startsWith('image/')) return '🖼️';
-  if(type.startsWith('video/')) return '🎬';
-  if(type.startsWith('audio/')) return '🎵';
-  if(type.includes('pdf')) return '📄';
-  if(type.includes('word')||name.endsWith('.doc')||name.endsWith('.docx')) return '📝';
+  if(type.startsWith('image/')) return '🖼️'; if(type.startsWith('video/')) return '🎬'; if(type.startsWith('audio/')) return '🎵';
+  if(type.includes('pdf')) return '📄'; if(type.includes('word')||name.endsWith('.doc')||name.endsWith('.docx')) return '📝';
   if(type.includes('excel')||name.endsWith('.xls')||name.endsWith('.xlsx')) return '📊';
-  if(type.includes('zip')||type.includes('rar')||name.endsWith('.zip')||name.endsWith('.rar')) return '🗜️';
-  return '📎';
+  if(type.includes('zip')||type.includes('rar')||name.endsWith('.zip')||name.endsWith('.rar')) return '🗜️'; return '📎';
 }
+
 var pc=null, localStream=null, callPeer=null;
 var ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'}]};
-
 function showCallBtn(show){ document.getElementById('callbtn').style.display=show?'':'none'; }
-
-function toggleCall(){
-  if(pc) endCall(); else startCall();
-}
-
+function toggleCall(){ if(pc) endCall(); else startCall(); }
 function startCall(){
   if(!dmTarget){ alert('กรุณาเปิด DM ก่อนโทรครับ'); return; }
   navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
-    localStream=stream;
-    pc=new RTCPeerConnection(ICE);
+    localStream=stream; pc=new RTCPeerConnection(ICE);
     stream.getTracks().forEach(function(t){ pc.addTrack(t,stream); });
     pc.onicecandidate=function(e){ if(e.candidate) socket.emit('webrtc',{type:'candidate',to:dmTarget.id,candidate:e.candidate}); };
     pc.ontrack=function(e){ document.getElementById('remoteAudio').srcObject=e.streams[0]; };
-    pc.createOffer().then(function(offer){
-      return pc.setLocalDescription(offer);
-    }).then(function(){
+    pc.createOffer().then(function(offer){ return pc.setLocalDescription(offer); }).then(function(){
       socket.emit('webrtc',{type:'offer',to:dmTarget.id,sdp:pc.localDescription});
       setCallUI(true,'📞 กำลังโทรหา '+dmTarget.name+'...');
     });
-  }).catch(function(err){ 
-    var msgs=document.getElementById('msgs');
-    var s=document.createElement('div');s.className='sys';
-    s.textContent='🎤 กรุณาอนุญาตไมค์ในเบราว์เซอร์ก่อนครับ';
-    msgs.appendChild(s);msgs.scrollTop=msgs.scrollHeight;
-  });
+  }).catch(function(){ var msgs=document.getElementById('msgs'); var s=document.createElement('div');s.className='sys';s.textContent='🎤 กรุณาอนุญาตไมค์ในเบราว์เซอร์ก่อนครับ';msgs.appendChild(s);msgs.scrollTop=msgs.scrollHeight; });
 }
-
 function endCall(){
   if(pc){ pc.close(); pc=null; }
   if(localStream){ localStream.getTracks().forEach(function(t){ t.stop(); }); localStream=null; }
   if(callPeer&&socket) socket.emit('webrtc',{type:'end',to:callPeer});
-  callPeer=null;
-  setCallUI(false,'');
+  callPeer=null; setCallUI(false,'');
 }
-
-function setCallUI(active, text){
-  var btn=document.getElementById('callbtn');
-  var banner=document.getElementById('call-banner');
-  btn.textContent=active?'📵':'📞';
-  btn.classList.toggle('incall',active);
-  banner.classList.toggle('show',active);
-  document.getElementById('call-banner-text').textContent=text;
+function setCallUI(active,text){
+  var btn=document.getElementById('callbtn'); var banner=document.getElementById('call-banner');
+  btn.textContent=active?'📵':'📞'; btn.classList.toggle('incall',active);
+  banner.classList.toggle('show',active); document.getElementById('call-banner-text').textContent=text;
 }
-
 function handleWebRTC(data){
   if(data.type==='offer'){
     callPeer=data.from;
-    // แจ้งเตือนรับสาย
     var accept=confirm('📞 '+data.fromName+' โทรหาคุณ รับสายไหม?');
     if(!accept){ socket.emit('webrtc',{type:'end',to:data.from}); return; }
     navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
-      localStream=stream;
-      pc=new RTCPeerConnection(ICE);
+      localStream=stream; pc=new RTCPeerConnection(ICE);
       stream.getTracks().forEach(function(t){ pc.addTrack(t,stream); });
       pc.onicecandidate=function(e){ if(e.candidate) socket.emit('webrtc',{type:'candidate',to:data.from,candidate:e.candidate}); };
       pc.ontrack=function(e){ document.getElementById('remoteAudio').srcObject=e.streams[0]; };
-      pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(function(){
-        return pc.createAnswer();
-      }).then(function(answer){
-        return pc.setLocalDescription(answer);
-      }).then(function(){
-        socket.emit('webrtc',{type:'answer',to:data.from,sdp:pc.localDescription});
-        setCallUI(true,'📞 กำลังคุยกับ '+data.fromName);
-      });
+      pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(function(){ return pc.createAnswer(); })
+      .then(function(answer){ return pc.setLocalDescription(answer); })
+      .then(function(){ socket.emit('webrtc',{type:'answer',to:data.from,sdp:pc.localDescription}); setCallUI(true,'📞 กำลังคุยกับ '+data.fromName); });
     });
-  } else if(data.type==='answer'){
-    if(pc) pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(function(){
-      setCallUI(true,'📞 กำลังคุยกับ '+(dmTarget?dmTarget.name:''));
-    });
-  } else if(data.type==='candidate'){
-    if(pc) pc.addIceCandidate(new RTCIceCandidate(data.candidate));
-  } else if(data.type==='end'){
-    endCall();
-    setCallUI(false,'');
-    var msgs=document.getElementById('msgs');
-    var s=document.createElement('div');s.className='sys';s.textContent='📵 วางสายแล้ว';msgs.appendChild(s);
+  } else if(data.type==='answer'){ if(pc) pc.setRemoteDescription(new RTCSessionDescription(data.sdp)).then(function(){ setCallUI(true,'📞 กำลังคุยกับ '+(dmTarget?dmTarget.name:'')); }); }
+  else if(data.type==='candidate'){ if(pc) pc.addIceCandidate(new RTCIceCandidate(data.candidate)); }
+  else if(data.type==='end'){
+    endCall(); setCallUI(false,'');
+    var msgs=document.getElementById('msgs'); var s=document.createElement('div');s.className='sys';s.textContent='📵 วางสายแล้ว';msgs.appendChild(s);
   }
 }
-
 function shareRoom(){
   var room=document.getElementById('room-title').textContent.replace('ห้อง ','');
   var url=window.location.origin+window.location.pathname+'?room='+encodeURIComponent(room==='Default'?'default':room);
-  navigator.clipboard.writeText(url).then(function(){
-    var btn=document.getElementById('sharebtn');
-    btn.textContent='✅ คัดลอกแล้ว!';
-    setTimeout(function(){btn.textContent='🔗 แชร์';},2000);
-  });
+  navigator.clipboard.writeText(url).then(function(){ var btn=document.getElementById('sharebtn'); btn.textContent='✅ คัดลอกแล้ว!'; setTimeout(function(){btn.textContent='🔗 แชร์';},2000); });
 }
-
 document.addEventListener('keydown',function(e){
   if(e.key!=='Enter') return;
   var chat=document.getElementById('chat');
   if(chat.style.display==='none'||chat.style.display==='') join(); else send();
 });
-
-// paste รูปได้เลย
 document.addEventListener('paste',function(e){
   if(!socket) return;
-  var items=e.clipboardData&&e.clipboardData.items;
-  if(!items) return;
+  var items=e.clipboardData&&e.clipboardData.items; if(!items) return;
   for(var i=0;i<items.length;i++){
-    if(items[i].type.indexOf('image')!==-1){
-      var file=items[i].getAsFile();
-      if(file) uploadImgFile(file);
-      break;
-    }
+    if(items[i].type.indexOf('image')!==-1){ var file=items[i].getAsFile(); if(file) uploadImgFile(file); break; }
   }
 });
-
 if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js'); }
 </script>
 </body>
