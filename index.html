@@ -308,7 +308,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 // ============ CONFIG ============
 var SUPABASE_URL = 'https://gtydphwyvbjsyxqagdsa.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0eWRwaHd5dmJqc3l4cWFnZHNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMDczNjcsImV4cCI6MjA4ODY4MzM2N30.Asnl6YLioSrMrvNVwF7NDUKljVi8VgsI9HRwHQtu350';
-var ADMIN_PASSWORD = 'admin1234'; // ← เปลี่ยนรหัสผ่านได้ที่นี่
+var ADMIN_PASSWORD_HASH = '4cd86a377b9dc54131e79c665e2630ccad1ec4f0eadf41893ce5e582eb77d34f';
 
 // ============ ANNOUNCE — Supabase ============
 function sbH() {
@@ -370,8 +370,11 @@ function cancelAdminLogin() {
   document.getElementById('announce-admin-login').classList.remove('show');
   document.getElementById('admin-pw-error').textContent = '';
 }
-function checkAdminPw() {
-  if (document.getElementById('admin-pw-input').value === ADMIN_PASSWORD) {
+async function checkAdminPw() {
+  var input = document.getElementById('admin-pw-input').value;
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(input));
+  var hash = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+  if (hash === ADMIN_PASSWORD_HASH) {
     cancelAdminLogin(); showEditMode();
   } else {
     document.getElementById('admin-pw-error').textContent = '❌ รหัสผ่านไม่ถูกต้อง';
