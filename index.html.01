@@ -11,30 +11,6 @@
 <link rel="manifest" href="manifest.json">
 <title>Vanish</title>
 <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
-<script>
-// ต้องนิยามก่อน Google GSI โหลด
-var googleUser = null;
-window.onGoogleSignIn = function(response) {
-  try {
-    var base64 = response.credential.split('.')[1];
-    var pad = base64.length % 4;
-    if (pad) base64 += '===='.slice(pad);
-    var payload = JSON.parse(atob(base64.replace(/-/g,'+').replace(/_/g,'/')));
-    googleUser = {
-      name: payload.name || payload.given_name || payload.email.split('@')[0],
-      firstName: payload.given_name || payload.name,
-      email: payload.email,
-      picture: payload.picture || ''
-    };
-    sessionStorage.setItem('google_user', JSON.stringify(googleUser));
-    showJoinStep();
-  } catch(e) {
-    alert('เกิดข้อผิดพลาดในการ Login กรุณาลองใหม่');
-    console.error(e);
-  }
-};
-</script>
-<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root { --green: #06C755; --green-dark: #05a847; }
@@ -51,33 +27,6 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 .ver{font-size:10px;color:#ccc;margin-bottom:10px;}
 .selling-points{display:flex;flex-direction:column;gap:5px;margin-top:14px;background:#f8fffe;border-radius:12px;padding:10px 12px;border:1px solid #e0f5ea;}
 .sp{font-size:12px;color:#555;text-align:left;}
-
-/* GOOGLE AUTH */
-#google-step { display:block; }
-#join-step { display:none; }
-
-.google-btn-wrap {
-  display:flex;justify-content:center;margin:16px 0 8px;
-}
-.google-user-card {
-  display:flex;align-items:center;gap:10px;
-  background:#f8fffe;border:1.5px solid #e0f5ea;
-  border-radius:14px;padding:10px 14px;margin-bottom:14px;
-  text-align:left;
-}
-.google-user-card img {
-  width:40px;height:40px;border-radius:50%;flex-shrink:0;
-  box-shadow:0 2px 8px rgba(0,0,0,0.12);
-}
-.google-user-info { flex:1;min-width:0; }
-.google-user-name { font-size:14px;font-weight:700;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-.google-user-email { font-size:11px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-.google-change-btn {
-  background:none;border:none;font-size:11px;color:#aaa;
-  cursor:pointer;padding:2px 4px;border-radius:6px;flex-shrink:0;
-  font-family:'Noto Sans Thai',sans-serif;
-}
-.google-change-btn:hover { color:#666;background:#f0f0f0; }
 
 /* ANNOUNCE LINK */
 .announce-link-wrap { margin-bottom:14px; }
@@ -139,12 +88,14 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(231,76,60,0.4)}50%{box-shadow:0 0 0 8px rgba(231,76,60,0)}}
 .call-banner{background:#e74c3c;padding:8px 14px;font-size:12px;color:white;display:none;align-items:center;gap:8px;flex-shrink:0;}
 .call-banner.show{display:flex;}
+.call-banner span{flex:1;}
 #remoteAudio{display:none;}
 .field-label{font-size:12px;color:#888;text-align:left;margin-bottom:5px;padding-left:2px;}
 .field-wrap{margin-bottom:12px;}
-#login input[type="text"]{width:100%;padding:13px 16px;border:2px solid #eee;border-radius:12px;font-size:15px;font-family:'Noto Sans Thai',sans-serif;outline:none;transition:border-color 0.2s;background:#fafafa;color:#111;}
-#login input[type="text"]:focus{border-color:var(--green);box-shadow:0 0 0 4px rgba(6,199,85,0.12);background:white;}
+#login input{width:100%;padding:13px 16px;border:2px solid #eee;border-radius:12px;font-size:15px;font-family:'Noto Sans Thai',sans-serif;outline:none;transition:border-color 0.2s;background:#fafafa;color:#111;}
+#login input:focus{border-color:var(--green);box-shadow:0 0 0 4px rgba(6,199,85,0.12);background:white;}
 .room-hint{font-size:11px;color:#bbb;text-align:left;padding-left:4px;margin-top:4px;}
+#name-error{font-size:12px;color:#e74c3c;min-height:16px;text-align:left;padding-left:4px;margin-bottom:8px;}
 #login button.join-btn{width:100%;padding:14px;background:var(--green);color:white;border:none;border-radius:12px;font-size:16px;font-weight:700;font-family:'Noto Sans Thai',sans-serif;cursor:pointer;transition:background 0.2s,transform 0.1s;box-shadow:0 4px 16px rgba(6,199,85,0.35);}
 #login button.join-btn:hover{background:var(--green-dark);}
 #login button.join-btn:active{transform:scale(0.97);}
@@ -169,8 +120,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 .header { background:var(--green);padding:0 14px;height:56px;display:flex;align-items:center;gap:10px;flex-shrink:0; }
 .h-back { background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:50%;font-size:16px;cursor:pointer;display:none;align-items:center;justify-content:center;flex-shrink:0; }
 .h-back.show { display:flex; }
-.h-avatar { width:36px;height:36px;background:rgba(255,255,255,0.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;overflow:hidden; }
-.h-avatar img { width:100%;height:100%;object-fit:cover; }
+.h-avatar { width:36px;height:36px;background:rgba(255,255,255,0.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0; }
 .h-info { flex:1;min-width:0; }
 .h-title { color:white;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .h-sub { color:rgba(255,255,255,0.8);font-size:11px;display:flex;align-items:center;gap:4px; }
@@ -183,8 +133,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
 .row { display:flex;align-items:flex-end;gap:6px;animation:fadeUp 0.2s ease; }
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 .row.me { flex-direction:row-reverse; }
-.avatar { width:30px;height:30px;border-radius:50%;background:var(--green);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.15);overflow:hidden; }
-.avatar img { width:100%;height:100%;object-fit:cover; }
+.avatar { width:30px;height:30px;border-radius:50%;background:var(--green);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,0.15); }
 .col { max-width:72%;display:flex;flex-direction:column; }
 .row.me .col { align-items:flex-end; }
 .sender { font-size:10px;color:#7a8f9a;margin-bottom:2px;padding-left:2px; }
@@ -246,6 +195,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
       <button class="am-close" onclick="closeAnnounceModal()">✕</button>
     </div>
     <div class="am-body">
+      <!-- VIEW -->
       <div id="announce-view">
         <div class="announce-content" id="announce-text-display">
           <span class="am-loading">⏳ กำลังโหลด...</span>
@@ -253,6 +203,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
         <div class="am-timestamp" id="announce-timestamp"></div>
         <button class="am-admin-btn" onclick="showAdminLogin()">🔒 แก้ไขประกาศ (Admin)</button>
       </div>
+      <!-- ADMIN LOGIN -->
       <div id="announce-admin-login">
         <div class="field-label" style="margin-top:4px">รหัสผ่าน Admin</div>
         <input class="am-input" id="admin-pw-input" type="password" placeholder="ใส่รหัสผ่าน..." autocomplete="off">
@@ -260,6 +211,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
         <button class="am-btn am-btn-green" onclick="checkAdminPw()">เข้าสู่ระบบ</button>
         <button class="am-btn am-btn-gray" style="margin-top:6px" onclick="cancelAdminLogin()">ยกเลิก</button>
       </div>
+      <!-- EDIT -->
       <div id="announce-edit">
         <div class="field-label" style="margin-top:4px">ข้อความประกาศ</div>
         <textarea class="am-textarea" id="announce-edit-input" placeholder="พิมพ์ประกาศที่นี่..." maxlength="1000" oninput="updateCharCount()"></textarea>
@@ -275,50 +227,27 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   </div>
 </div>
 
-<!-- LOGIN -->
 <div id="login">
   <div class="login-icon">💬</div>
   <h2>เข้าสู่ห้องสนทนา</h2>
   <p>ตั้งชื่อและเลือกห้องที่ต้องการ</p>
-  <div class="ver">v3.7</div>
-
+  <div class="ver">v3.6</div>
   <div class="announce-link-wrap">
     <span class="announce-link" onclick="openAnnounceModal()">
       <span class="announce-dot"></span>📢 ประกาศ
     </span>
   </div>
-
-  <!-- STEP 1: Google Sign-In -->
-  <div id="google-step">
-    <p style="font-size:13px;color:#666;margin-bottom:14px">กรุณา Login ด้วย Google ก่อนเข้าใช้งาน</p>
-    <div class="google-btn-wrap">
-      <div id="g_id_onload"
-        data-client_id="238791857661-ottpcev08t84rrm1en6sf95s9mhg98b1.apps.googleusercontent.com"
-        data-callback="onGoogleSignIn"
-        data-auto_prompt="false">
-      </div>
-      <div class="g_id_signin"
-        data-type="standard"
-        data-shape="pill"
-        data-theme="outline"
-        data-text="signin_with"
-        data-size="large"
-        data-locale="th">
-      </div>
-    </div>
+  <div class="field-wrap">
+    <div class="field-label">ชื่อของคุณ</div>
+    <input id="name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
   </div>
-
-  <!-- STEP 2: Room selection (shown after Google login) -->
-  <div id="join-step">
-    <div class="google-user-card" id="google-user-card"></div>
-    <div class="field-wrap">
-      <div class="field-label">ห้องแชท (ไม่ระบุ = Default)</div>
-      <input id="room" type="text" placeholder="ไม่ระบุ" maxlength="30" autocomplete="off">
-      <div class="room-hint">พิมพ์ชื่อห้องที่มีอยู่เพื่อเข้าร่วม หรือพิมพ์ชื่อใหม่เพื่อสร้างห้อง</div>
-    </div>
-    <button class="join-btn" onclick="join()">เข้าร่วม</button>
+  <div class="field-wrap">
+    <div class="field-label">ห้องแชท (ไม่ระบุ = Default)</div>
+    <input id="room" type="text" placeholder="ไม่ระบุ" maxlength="30" autocomplete="off">
+    <div class="room-hint">พิมพ์ชื่อห้องที่มีอยู่เพื่อเข้าร่วม หรือพิมพ์ชื่อใหม่เพื่อสร้างห้อง</div>
   </div>
-
+  <div id="name-error"></div>
+  <button class="join-btn" onclick="join()">เข้าร่วม</button>
   <div class="selling-points">
     <div class="sp">💬 แชทกลุ่ม • 👤 DM • 🖼️ รูปภาพ • 📎 ไฟล์ • 😊 Emoji • 📞 Voice Call</div>
   </div>
@@ -381,55 +310,18 @@ var SUPABASE_URL = 'https://gtydphwyvbjsyxqagdsa.supabase.co';
 var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0eWRwaHd5dmJqc3l4cWFnZHNhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzMxMDczNjcsImV4cCI6MjA4ODY4MzM2N30.Asnl6YLioSrMrvNVwF7NDUKljVi8VgsI9HRwHQtu350';
 var ADMIN_PASSWORD_HASH = '4cd86a377b9dc54131e79c665e2630ccad1ec4f0eadf41893ce5e582eb77d34f';
 
-// ============ GOOGLE AUTH ============
-
-function showJoinStep() {
-  document.getElementById('google-step').style.display = 'none';
-  document.getElementById('join-step').style.display = 'block';
-
-  // แสดง user card
-  var card = document.getElementById('google-user-card');
-  var pic = googleUser.picture
-    ? '<img src="' + googleUser.picture + '" alt="avatar">'
-    : '<div style="width:40px;height:40px;border-radius:50%;background:var(--green);color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0">' + googleUser.name.slice(0,1).toUpperCase() + '</div>';
-  card.innerHTML =
-    pic +
-    '<div class="google-user-info">' +
-      '<div class="google-user-name">' + googleUser.name + '</div>' +
-      '<div class="google-user-email">' + googleUser.email + '</div>' +
-    '</div>' +
-    '<button class="google-change-btn" onclick="signOutGoogle()">เปลี่ยน</button>';
-}
-
-function signOutGoogle() {
-  googleUser = null;
-  sessionStorage.removeItem('google_user');
-  document.getElementById('join-step').style.display = 'none';
-  document.getElementById('google-step').style.display = 'block';
-  // reset google button
-  if (window.google && google.accounts && google.accounts.id) {
-    google.accounts.id.disableAutoSelect();
-  }
-}
-
-// restore google session on reload
-(function() {
-  var saved = sessionStorage.getItem('google_user');
-  if (saved) {
-    try { googleUser = JSON.parse(saved); } catch(e) {}
-  }
-})();
-
 // ============ ANNOUNCE — Supabase ============
 function sbH() {
   return { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' };
 }
+
 function fetchAnnounce(cb) {
   fetch(SUPABASE_URL + '/rest/v1/announce?id=eq.1&select=text,updated_at', { headers: sbH() })
     .then(function(r){ return r.json(); })
     .then(function(d){ cb(null, (d && d[0]) ? d[0] : { text:'', updated_at:null }); })
     .catch(function(e){ cb(e, null); });
 }
+
 function patchAnnounce(text, cb) {
   fetch(SUPABASE_URL + '/rest/v1/announce?id=eq.1', {
     method: 'PATCH',
@@ -437,6 +329,7 @@ function patchAnnounce(text, cb) {
     body: JSON.stringify({ text: text, updated_at: new Date().toISOString() })
   }).then(function(){ cb(null); }).catch(function(e){ cb(e); });
 }
+
 function openAnnounceModal() {
   document.getElementById('announce-overlay').classList.add('show');
   document.getElementById('announce-text-display').innerHTML = '<span class="am-loading">⏳ กำลังโหลด...</span>';
@@ -446,6 +339,7 @@ function openAnnounceModal() {
     renderView(data);
   });
 }
+
 function renderView(data) {
   var el = document.getElementById('announce-text-display');
   var ts = document.getElementById('announce-timestamp');
@@ -459,11 +353,13 @@ function renderView(data) {
     ts.textContent = '';
   }
 }
+
 function closeAnnounceModal(e) {
   if (e && e.target !== document.getElementById('announce-overlay')) return;
   document.getElementById('announce-overlay').classList.remove('show');
   cancelAdminLogin(); cancelEdit();
 }
+
 function showAdminLogin() {
   document.getElementById('announce-admin-login').classList.add('show');
   document.getElementById('admin-pw-input').value = '';
@@ -526,6 +422,7 @@ function clearAnnounce() {
     if (!err) { renderView({ text:'', updated_at:null }); cancelEdit(); }
   });
 }
+
 document.addEventListener('keydown', function(e) {
   var al = document.getElementById('announce-admin-login');
   var ov = document.getElementById('announce-overlay');
@@ -534,7 +431,7 @@ document.addEventListener('keydown', function(e) {
 });
 // ============ / ANNOUNCE ============
 
-var socket, me, myAvatar, myId, curTab='emoji';
+var socket, me, myId, curTab='emoji';
 var dmTarget=null, dmUnread={}, dmHistory={}, groupHistory=[], mode='group';
 var typingTimer=null, typingUsers={};
 
@@ -562,89 +459,54 @@ if(urlRoom)document.getElementById('room').value=urlRoom;
 function saveHistory(){try{sessionStorage.setItem('chat_group',JSON.stringify(groupHistory.slice(-200)));sessionStorage.setItem('chat_dm',JSON.stringify(dmHistory));}catch(e){}}
 function loadHistory(){try{var g=sessionStorage.getItem('chat_group');var d=sessionStorage.getItem('chat_dm');if(g)groupHistory=JSON.parse(g);if(d)dmHistory=JSON.parse(d);}catch(e){}}
 
-// Auto-join if session exists
-(function(){
-  var savedGoogle = sessionStorage.getItem('google_user');
-  var savedName = sessionStorage.getItem('chat_name');
-  var savedRoom = sessionStorage.getItem('chat_room');
-  if (savedGoogle && savedName) {
-    try { googleUser = JSON.parse(savedGoogle); } catch(e) {}
-    loadHistory();
-    showJoinStep();
-    // auto re-join
-    document.getElementById('room').value = savedRoom || '';
-    join();
-  }
-})();
+(function(){var n=sessionStorage.getItem('chat_name');var r=sessionStorage.getItem('chat_room');if(n){loadHistory();document.getElementById('name').value=n;document.getElementById('room').value=r||'';join();}})();
 
 function join(){
-  if (!googleUser) {
-    alert('กรุณา Login ด้วย Google ก่อนครับ');
-    return;
-  }
-  me = googleUser.name;
-  myAvatar = googleUser.picture || '';
-  var room = document.getElementById('room').value.trim() || 'default';
-
-  if(socket) socket.disconnect();
-  socket = io();
-  socket.on('connect', function(){
-    myId = socket.id;
-    socket.emit('join', { name: me, room: room, avatar: myAvatar });
-  });
-  socket.on('nameTaken', function(){
-    socket.disconnect(); socket = null;
-    alert('⚠️ ชื่อ "' + me + '" มีคนใช้อยู่ในห้องนี้แล้ว กรุณาเปลี่ยนชื่อ Google Account หรือรอให้อีกคนออกก่อน');
-  });
-  socket.on('joined', function(data){
-    myId = data.sid;
-    sessionStorage.setItem('chat_name', me);
-    sessionStorage.setItem('chat_room', data.room);
-    var rn = data.room === 'default' ? 'Default' : data.room;
-    var dn = 'ห้อง ' + rn;
-    document.getElementById('room-title').textContent = dn;
-    document.getElementById('room-title').dataset.group = dn;
-    document.getElementById('login').style.display = 'none';
-    document.getElementById('chat').style.display = 'flex';
-    // แสดงรูป profile ของตัวเองใน header
-    if (myAvatar) {
-      document.getElementById('h-avatar').innerHTML = '<img src="' + myAvatar + '" alt="me">';
-    }
-    if(screen.orientation && screen.orientation.lock) screen.orientation.lock('portrait').catch(function(){});
-    groupHistory.forEach(function(d){ addMsgToView(d, false); });
-    document.getElementById('msgs').scrollTop = document.getElementById('msgs').scrollHeight;
+  me=document.getElementById('name').value.trim();
+  var room=document.getElementById('room').value.trim()||'default';
+  document.getElementById('name-error').textContent='';
+  if(!me)return;
+  if(socket)socket.disconnect();
+  socket=io();
+  socket.on('connect',function(){myId=socket.id;socket.emit('join',{name:me,room:room});});
+  socket.on('nameTaken',function(){socket.disconnect();socket=null;document.getElementById('name').style.borderColor='#e74c3c';document.getElementById('name-error').textContent='⚠️ ชื่อนี้มีคนใช้อยู่ในห้องนี้แล้ว';document.getElementById('name').focus();});
+  socket.on('joined',function(data){
+    myId=data.sid;
+    sessionStorage.setItem('chat_name',me);sessionStorage.setItem('chat_room',data.room);
+    var rn=data.room==='default'?'Default':data.room;
+    var dn='ห้อง '+rn;
+    document.getElementById('room-title').textContent=dn;
+    document.getElementById('room-title').dataset.group=dn;
+    document.getElementById('login').style.display='none';
+    document.getElementById('chat').style.display='flex';
+    if(screen.orientation&&screen.orientation.lock)screen.orientation.lock('portrait').catch(function(){});
+    groupHistory.forEach(function(d){addMsgToView(d,false);});
+    document.getElementById('msgs').scrollTop=document.getElementById('msgs').scrollHeight;
     document.getElementById('msg').focus();
   });
-  socket.on('msg', function(d){
-    groupHistory.push(d); saveHistory();
-    if(mode==='group') addMsgToView(d, false);
-    if(d.user!=='System' && d.sid!==myId) playNotify();
+  socket.on('msg',function(d){groupHistory.push(d);saveHistory();if(mode==='group')addMsgToView(d,false);if(d.user!=='System'&&d.sid!==myId)playNotify();});
+  socket.on('dm',function(d){
+    var oid=d.fromId===myId?d.toId:d.fromId;
+    if(!dmHistory[oid])dmHistory[oid]=[];
+    dmHistory[oid].push(d);saveHistory();
+    if(mode==='dm'&&dmTarget&&dmTarget.id===oid){addDmToView(d);if(d.fromId!==myId)playNotify();}
+    else if(d.fromId!==myId){dmUnread[oid]=(dmUnread[oid]||0)+1;updateUsersSidebar();playNotify();}
   });
-  socket.on('dm', function(d){
-    var oid = d.fromId===myId ? d.toId : d.fromId;
-    if(!dmHistory[oid]) dmHistory[oid]=[];
-    dmHistory[oid].push(d); saveHistory();
-    if(mode==='dm' && dmTarget && dmTarget.id===oid){ addDmToView(d); if(d.fromId!==myId) playNotify(); }
-    else if(d.fromId!==myId){ dmUnread[oid]=(dmUnread[oid]||0)+1; updateUsersSidebar(); playNotify(); }
-  });
-  socket.on('typing', function(d){ if(d.typing) typingUsers[d.name]=true; else delete typingUsers[d.name]; updateTyping(); });
-  socket.on('users', function(list){ window._userList=list; updateUsers(list); });
-  socket.on('webrtc', function(d){ handleWebRTC(d); });
+  socket.on('typing',function(d){if(d.typing)typingUsers[d.name]=true;else delete typingUsers[d.name];updateTyping();});
+  socket.on('users',function(list){window._userList=list;updateUsers(list);});
+  socket.on('webrtc',function(d){handleWebRTC(d);});
 }
 
 function updateUsers(list){
-  var ul=document.getElementById('userlist'); ul.innerHTML='';
+  var ul=document.getElementById('userlist');ul.innerHTML='';
   document.getElementById('user-count').textContent=list.length+' คน';
   list.forEach(function(u){
     var div=document.createElement('div');
     div.className='user-item'+(dmTarget&&dmTarget.id===u.id?' dm-active':'');
     var isMe=u.id===myId;
     var badge=(!isMe&&dmUnread[u.id])?'<span class="u-badge">'+dmUnread[u.id]+'</span>':'';
-    var avatarHtml = u.avatar
-      ? '<img src="'+u.avatar+'" style="width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0">'
-      : '<div class="u-dot"></div>';
-    div.innerHTML = avatarHtml + '<div class="u-name'+(isMe?' u-me':'')+'">'+u.name+(isMe?' (คุณ)':'')+'</div>'+badge;
-    if(!isMe){ div.onclick=function(){ openDM(u); }; div.title='DM กับ '+u.name; }
+    div.innerHTML='<div class="u-dot"></div><div class="u-name'+(isMe?' u-me':'')+'">'+u.name+(isMe?' (คุณ)':'')+'</div>'+badge;
+    if(!isMe){div.onclick=function(){openDM(u);};div.title='DM กับ '+u.name;}
     ul.appendChild(div);
   });
 }
@@ -654,7 +516,7 @@ document.addEventListener('DOMContentLoaded',function(){document.getElementById(
 function updateUsersSidebar(){if(window._userList)updateUsers(window._userList);}
 
 function openDM(user){
-  dmTarget=user; mode='dm'; dmUnread[user.id]=0;
+  dmTarget=user;mode='dm';dmUnread[user.id]=0;
   document.getElementById('room-title').textContent='💬 '+user.name;
   document.getElementById('h-sub-text').textContent='Direct Message';
   document.getElementById('h-avatar').textContent='👤';
@@ -666,42 +528,26 @@ function openDM(user){
   document.getElementById('msg').classList.add('dm-mode');
   document.getElementById('msg').placeholder='ส่งหา '+user.name+'...';
   document.getElementById('sendbtn').classList.add('dm-mode');
-  var msgs=document.getElementById('msgs'); msgs.innerHTML='';
-  (dmHistory[user.id]||[]).forEach(function(d){ addDmToView(d); });
-  msgs.scrollTop=msgs.scrollHeight; updateUsersSidebar();
+  var msgs=document.getElementById('msgs');msgs.innerHTML='';
+  (dmHistory[user.id]||[]).forEach(function(d){addDmToView(d);});
+  msgs.scrollTop=msgs.scrollHeight;updateUsersSidebar();
 }
 function backToGroup(){
-  dmTarget=null; mode='group';
+  dmTarget=null;mode='group';
   var dn=document.getElementById('room-title').dataset.group||'ห้อง Default';
   document.getElementById('room-title').textContent=dn;
   document.getElementById('h-sub-text').textContent='Online';
-  if(myAvatar){document.getElementById('h-avatar').innerHTML='<img src="'+myAvatar+'" alt="me">';}
-  else{document.getElementById('h-avatar').textContent='👥';}
+  document.getElementById('h-avatar').textContent='👥';
   document.getElementById('backbtn').classList.remove('show');
   document.getElementById('sharebtn').style.display='none';
-  showCallBtn(false); endCall();
+  showCallBtn(false);endCall();
   document.getElementById('dm-banner').classList.remove('show');
   document.getElementById('msg').classList.remove('dm-mode');
   document.getElementById('msg').placeholder='พิมพ์ข้อความ...';
   document.getElementById('sendbtn').classList.remove('dm-mode');
-  var msgs=document.getElementById('msgs'); msgs.innerHTML='';
-  groupHistory.forEach(function(d){ addMsgToView(d, false); });
-  msgs.scrollTop=msgs.scrollHeight; updateUsersSidebar();
-}
-
-function makeAvatar(name, avatarUrl, colorName) {
-  var div = document.createElement('div');
-  div.className = 'avatar';
-  if (avatarUrl) {
-    var img = document.createElement('img');
-    img.src = avatarUrl;
-    img.alt = name;
-    div.appendChild(img);
-  } else {
-    div.textContent = name.slice(0,2).toUpperCase();
-    if (colorName) div.style.background = nameColor(colorName);
-  }
-  return div;
+  var msgs=document.getElementById('msgs');msgs.innerHTML='';
+  groupHistory.forEach(function(d){addMsgToView(d,false);});
+  msgs.scrollTop=msgs.scrollHeight;updateUsersSidebar();
 }
 
 function addMsgToView(d){
@@ -709,9 +555,10 @@ function addMsgToView(d){
   if(d.user==='System'){var s=document.createElement('div');s.className='sys';s.textContent=d.text;msgs.appendChild(s);}
   else{
     var isMe=d.sid===myId||d.user===me;
-    var row=document.createElement('div'); row.className='row'+(isMe?' me':'');
-    var av = makeAvatar(d.user, isMe ? myAvatar : (d.avatar||''), isMe ? null : d.user);
-    var col=document.createElement('div'); col.className='col';
+    var row=document.createElement('div');row.className='row'+(isMe?' me':'');
+    var av=document.createElement('div');av.className='avatar';av.textContent=d.user.slice(0,2).toUpperCase();
+    if(!isMe)av.style.background=nameColor(d.user);
+    var col=document.createElement('div');col.className='col';
     if(!isMe){var sn=document.createElement('div');sn.className='sender';sn.textContent=d.user;col.appendChild(sn);}
     var bub=document.createElement('div');
     if(d.image){bub.className='bubble '+(isMe?'me':'other');var img=document.createElement('img');img.src=d.image;img.onclick=function(){window.open(d.image,'_blank');};bub.appendChild(img);}
@@ -724,14 +571,13 @@ function addMsgToView(d){
   }
   msgs.scrollTop=msgs.scrollHeight;
 }
-
 function addDmToView(d){
   var msgs=document.getElementById('msgs');
   var isMe=d.fromId===myId;
-  var row=document.createElement('div'); row.className='row'+(isMe?' me':'');
-  var av = makeAvatar(isMe?me:d.fromName, isMe?myAvatar:(d.fromAvatar||''), isMe?null:d.fromName);
-  if(!isMe) av.style.background='#9b59b6';
-  var col=document.createElement('div'); col.className='col';
+  var row=document.createElement('div');row.className='row'+(isMe?' me':'');
+  var av=document.createElement('div');av.className='avatar';av.textContent=(isMe?me:d.fromName).slice(0,2).toUpperCase();
+  if(!isMe)av.style.background='#9b59b6';
+  var col=document.createElement('div');col.className='col';
   if(!isMe){var sn=document.createElement('div');sn.className='sender';sn.textContent=d.fromName;col.appendChild(sn);}
   var bub=document.createElement('div');
   if(d.image){bub.className='bubble dm-bubble '+(isMe?'me':'other');var img=document.createElement('img');img.src=d.image;img.onclick=function(){window.open(d.image,'_blank');};bub.appendChild(img);}
@@ -767,7 +613,7 @@ function uploadImgFile(file){
     var b64=e.target.result.split(',')[1];var fd=new FormData();fd.append('image',b64);
     fetch('https://api.imgbb.com/1/upload?key=9c3cae51f07e4cf9afca704b6a7814b6',{method:'POST',body:fd})
     .then(function(r){return r.json();})
-    .then(function(data){var el=document.getElementById(tmpId);if(el)el.remove();if(data.success){var url=data.data.url;if(mode==='dm'&&dmTarget)socket.emit('dm',{toId:dmTarget.id,text:'',image:url});else socket.emit('msg',{user:me,text:'',image:url,avatar:myAvatar});}})
+    .then(function(data){var el=document.getElementById(tmpId);if(el)el.remove();if(data.success){var url=data.data.url;if(mode==='dm'&&dmTarget)socket.emit('dm',{toId:dmTarget.id,text:'',image:url});else socket.emit('msg',{user:me,text:'',image:url});}})
     .catch(function(){var el=document.getElementById(tmpId);if(el)el.textContent='❌ อัพโหลดไม่สำเร็จ';setTimeout(function(){var el=document.getElementById(tmpId);if(el)el.remove();},2000);});
   };
   reader.readAsDataURL(file);
@@ -784,7 +630,7 @@ function uploadFile(input){
   .catch(function(){var el=document.getElementById(tmpId);if(el)el.textContent='❌ อัพโหลดไม่สำเร็จ';setTimeout(function(){if(el)el.remove();},2000);});
 }
 function formatSize(b){if(b<1024)return b+'B';if(b<1024*1024)return(b/1024).toFixed(1)+'KB';return(b/1024/1024).toFixed(1)+'MB';}
-function getFileIcon(type,name){if(!type)type='';if(type.startsWith('image/'))return'\uD83D\uDDBC\uFE0F';if(type.startsWith('video/'))return'\uD83C\uDFAC';if(type.startsWith('audio/'))return'\uD83C\uDFB5';if(type.includes('pdf'))return'\uD83D\uDCC4';if(type.includes('word')||name.endsWith('.doc')||name.endsWith('.docx'))return'\uD83D\uDCDD';if(type.includes('excel')||name.endsWith('.xls')||name.endsWith('.xlsx'))return'\uD83D\uDCCA';if(type.includes('zip')||type.includes('rar')||name.endsWith('.zip')||name.endsWith('.rar'))return'\uD83D\uDDDC\uFE0F';return'\uD83D\uDCCE';}
+function getFileIcon(type,name){if(!type)type='';if(type.startsWith('image/'))return'🖼️';if(type.startsWith('video/'))return'🎬';if(type.startsWith('audio/'))return'🎵';if(type.includes('pdf'))return'📄';if(type.includes('word')||name.endsWith('.doc')||name.endsWith('.docx'))return'📝';if(type.includes('excel')||name.endsWith('.xls')||name.endsWith('.xlsx'))return'📊';if(type.includes('zip')||type.includes('rar')||name.endsWith('.zip')||name.endsWith('.rar'))return'🗜️';return'📎';}
 
 var pc=null,localStream=null,callPeer=null;
 var ICE={iceServers:[{urls:'stun:stun.l.google.com:19302'}]};
@@ -811,15 +657,7 @@ function handleWebRTC(data){
 
 function shareRoom(){var room=document.getElementById('room-title').textContent.replace('ห้อง ','');var url=window.location.origin+window.location.pathname+'?room='+encodeURIComponent(room==='Default'?'default':room);navigator.clipboard.writeText(url).then(function(){var btn=document.getElementById('sharebtn');btn.textContent='✅ คัดลอกแล้ว!';setTimeout(function(){btn.textContent='🔗 แชร์';},2000);});}
 
-document.addEventListener('keydown',function(e){
-  if(e.key!=='Enter')return;
-  var chat=document.getElementById('chat');
-  if(chat.style.display==='none'||chat.style.display===''){
-    if(googleUser) join();
-  } else {
-    send();
-  }
-});
+document.addEventListener('keydown',function(e){if(e.key!=='Enter')return;var chat=document.getElementById('chat');if(chat.style.display==='none'||chat.style.display==='')join();else send();});
 document.addEventListener('paste',function(e){if(!socket)return;var items=e.clipboardData&&e.clipboardData.items;if(!items)return;for(var i=0;i<items.length;i++){if(items[i].type.indexOf('image')!==-1){var file=items[i].getAsFile();if(file)uploadImgFile(file);break;}}});
 if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js');}
 </script>
