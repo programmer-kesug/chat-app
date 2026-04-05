@@ -78,11 +78,6 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   font-family:'Noto Sans Thai',sans-serif;
 }
 .google-change-btn:hover { color:#666;background:#f0f0f0; }
-.google-perks { background:#f0faf5;border:1px solid #c8eed8;border-radius:10px;padding:7px 12px;margin:10px 0 6px;font-size:12px;color:#27ae60;text-align:left; }
-.or-divider { display:flex;align-items:center;gap:8px;margin:12px 0 10px;color:#ccc;font-size:12px; }
-.or-divider::before,.or-divider::after { content:'';flex:1;height:1px;background:#eee; }
-.guest-btn { background:#f0f0f0!important;color:#555!important;box-shadow:none!important;font-size:14px!important; }
-.guest-btn:hover { background:#e5e5e5!important; }
 
 /* ANNOUNCE LINK */
 .announce-link-wrap { margin-bottom:14px; }
@@ -293,8 +288,9 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
     </span>
   </div>
 
-  <!-- STEP 1: เลือก login หรือ guest -->
+  <!-- STEP 1: Google Sign-In -->
   <div id="google-step">
+    <p style="font-size:13px;color:#666;margin-bottom:14px">กรุณา Login ด้วย Google ก่อนเข้าใช้งาน</p>
     <div class="google-btn-wrap">
       <div id="g_id_onload"
         data-client_id="238791857661-ottpcev08t84rrm1en6sf95s9mhg98b1.apps.googleusercontent.com"
@@ -310,19 +306,9 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
         data-locale="th">
       </div>
     </div>
-    <div class="google-perks">
-      <div class="perk-item">✅ DM • ส่งรูป/ไฟล์ • Voice Call • รูปโปรไฟล์</div>
-    </div>
-    <div class="or-divider"><span>หรือ</span></div>
-    <div class="field-wrap">
-      <div class="field-label">เข้าในฐานะ Guest (แชทกลุ่มอย่างเดียว)</div>
-      <input id="guest-name" type="text" placeholder="ชื่อของคุณ..." maxlength="20" autocomplete="off">
-    </div>
-    <div id="guest-name-error" style="font-size:12px;color:#e74c3c;min-height:16px;text-align:left;padding-left:4px;margin-bottom:8px"></div>
-    <button class="join-btn guest-btn" onclick="joinAsGuest()">เข้าเป็น Guest</button>
   </div>
 
-  <!-- STEP 2: Room selection -->
+  <!-- STEP 2: Room selection (shown after Google login) -->
   <div id="join-step">
     <div class="google-user-card" id="google-user-card"></div>
     <div class="field-wrap">
@@ -334,8 +320,7 @@ body { font-family:'Noto Sans Thai',sans-serif;background:#c8d6e0;display:flex;j
   </div>
 
   <div class="selling-points">
-    <div class="sp">💬 แชทกลุ่ม • 👤 DM* • 🖼️ รูปภาพ* • 📎 ไฟล์* • 😊 Emoji • 📞 Voice Call*</div>
-    <div class="sp" style="font-size:10px;color:#bbb">* สำหรับผู้ใช้ Gmail เท่านั้น</div>
+    <div class="sp">💬 แชทกลุ่ม • 👤 DM • 🖼️ รูปภาพ • 📎 ไฟล์ • 😊 Emoji • 📞 Voice Call</div>
   </div>
 </div>
 
@@ -397,37 +382,6 @@ var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSI
 var ADMIN_PASSWORD_HASH = '4cd86a377b9dc54131e79c665e2630ccad1ec4f0eadf41893ce5e582eb77d34f';
 
 // ============ GOOGLE AUTH ============
-
-function joinAsGuest() {
-  var name = document.getElementById('guest-name').value.trim();
-  var err = document.getElementById('guest-name-error');
-  if (!name) { err.textContent = 'กรุณาใส่ชื่อก่อนนะครับ'; return; }
-  err.textContent = '';
-  googleUser = null;
-  isGuest = true;
-  me = name;
-  myAvatar = '';
-  sessionStorage.setItem('chat_name', me);
-  sessionStorage.setItem('chat_room', '');
-  sessionStorage.setItem('is_guest', '1');
-  // แสดง join step แบบ guest
-  document.getElementById('google-step').style.display = 'none';
-  document.getElementById('join-step').style.display = 'block';
-  var card = document.getElementById('google-user-card');
-  card.innerHTML =
-    '<div style="width:40px;height:40px;border-radius:50%;background:#aaa;color:white;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex-shrink:0">' + name.slice(0,1).toUpperCase() + '</div>' +
-    '<div class="google-user-info"><div class="google-user-name">' + name + '</div><div class="google-user-email">Guest · แชทกลุ่มเท่านั้น</div></div>' +
-    '<button class="google-change-btn" onclick="backToLoginStep()">เปลี่ยน</button>';
-}
-
-function backToLoginStep() {
-  isGuest = false;
-  googleUser = null;
-  sessionStorage.removeItem('is_guest');
-  sessionStorage.removeItem('chat_name');
-  document.getElementById('join-step').style.display = 'none';
-  document.getElementById('google-step').style.display = 'block';
-}
 
 function showJoinStep() {
   document.getElementById('google-step').style.display = 'none';
@@ -581,7 +535,6 @@ document.addEventListener('keydown', function(e) {
 // ============ / ANNOUNCE ============
 
 var socket, me, myAvatar, myId, curTab='emoji';
-var isGuest = false;
 var dmTarget=null, dmUnread={}, dmHistory={}, groupHistory=[], mode='group';
 var typingTimer=null, typingUsers={};
 
@@ -614,58 +567,46 @@ function loadHistory(){try{var g=sessionStorage.getItem('chat_group');var d=sess
   var savedGoogle = sessionStorage.getItem('google_user');
   var savedName = sessionStorage.getItem('chat_name');
   var savedRoom = sessionStorage.getItem('chat_room');
-  var savedGuest = sessionStorage.getItem('is_guest');
-  if (savedGuest && savedName) {
-    isGuest = true;
-    me = savedName;
-    myAvatar = '';
-    loadHistory();
-    joinAsGuest();
-    document.getElementById('room').value = savedRoom || '';
-    join();
-  } else if (savedGoogle && savedName) {
+  if (savedGoogle && savedName) {
     try { googleUser = JSON.parse(savedGoogle); } catch(e) {}
-    isGuest = false;
     loadHistory();
     showJoinStep();
+    // auto re-join
     document.getElementById('room').value = savedRoom || '';
     join();
   }
 })();
 
 function join(){
-  if (!googleUser && !isGuest) {
-    alert('กรุณา Login ด้วย Google หรือเข้าเป็น Guest ก่อนครับ');
+  if (!googleUser) {
+    alert('กรุณา Login ด้วย Google ก่อนครับ');
     return;
   }
-  if (!isGuest) {
-    me = googleUser.name;
-    myAvatar = googleUser.picture || '';
-  }
+  me = googleUser.name;
+  myAvatar = googleUser.picture || '';
   var room = document.getElementById('room').value.trim() || 'default';
 
   if(socket) socket.disconnect();
   socket = io();
   socket.on('connect', function(){
     myId = socket.id;
-    socket.emit('join', { name: me, room: room, avatar: myAvatar, isGuest: isGuest });
+    socket.emit('join', { name: me, room: room, avatar: myAvatar });
   });
   socket.on('nameTaken', function(){
     socket.disconnect(); socket = null;
-    alert('⚠️ ชื่อ "' + me + '" มีคนใช้อยู่แล้ว กรุณาเปลี่ยนชื่อ');
+    alert('⚠️ ชื่อ "' + me + '" มีคนใช้อยู่ในห้องนี้แล้ว กรุณาเปลี่ยนชื่อ Google Account หรือรอให้อีกคนออกก่อน');
   });
   socket.on('joined', function(data){
     myId = data.sid;
     sessionStorage.setItem('chat_name', me);
     sessionStorage.setItem('chat_room', data.room);
-    if (isGuest) sessionStorage.setItem('is_guest', '1');
     var rn = data.room === 'default' ? 'Default' : data.room;
     var dn = 'ห้อง ' + rn;
     document.getElementById('room-title').textContent = dn;
     document.getElementById('room-title').dataset.group = dn;
     document.getElementById('login').style.display = 'none';
     document.getElementById('chat').style.display = 'flex';
-    applyGuestRestrictions();
+    // แสดงรูป profile ของตัวเองใน header
     if (myAvatar) {
       document.getElementById('h-avatar').innerHTML = '<img src="' + myAvatar + '" alt="me">';
     }
@@ -680,7 +621,6 @@ function join(){
     if(d.user!=='System' && d.sid!==myId) playNotify();
   });
   socket.on('dm', function(d){
-    if(isGuest) return;
     var oid = d.fromId===myId ? d.toId : d.fromId;
     if(!dmHistory[oid]) dmHistory[oid]=[];
     dmHistory[oid].push(d); saveHistory();
@@ -689,15 +629,7 @@ function join(){
   });
   socket.on('typing', function(d){ if(d.typing) typingUsers[d.name]=true; else delete typingUsers[d.name]; updateTyping(); });
   socket.on('users', function(list){ window._userList=list; updateUsers(list); });
-  socket.on('webrtc', function(d){ if(!isGuest) handleWebRTC(d); });
-}
-
-function applyGuestRestrictions() {
-  if (isGuest) {
-    document.getElementById('imgbtn').style.display = 'none';
-    document.getElementById('filebtn').style.display = 'none';
-    document.getElementById('callbtn').style.display = 'none';
-  }
+  socket.on('webrtc', function(d){ handleWebRTC(d); });
 }
 
 function updateUsers(list){
@@ -711,10 +643,8 @@ function updateUsers(list){
     var avatarHtml = u.avatar
       ? '<img src="'+u.avatar+'" style="width:20px;height:20px;border-radius:50%;object-fit:cover;flex-shrink:0">'
       : '<div class="u-dot"></div>';
-    var guestTag = u.isGuest ? '<span style="font-size:9px;color:#aaa;margin-left:2px">G</span>' : '';
-    div.innerHTML = avatarHtml + '<div class="u-name'+(isMe?' u-me':'')+'">'+u.name+(isMe?' (คุณ)':'')+guestTag+'</div>'+badge;
-    if(!isMe && !isGuest){ div.onclick=function(){ openDM(u); }; div.title='DM กับ '+u.name; }
-    else if(!isMe && isGuest){ div.style.cursor='default'; div.title='Login ด้วย Gmail เพื่อส่ง DM'; }
+    div.innerHTML = avatarHtml + '<div class="u-name'+(isMe?' u-me':'')+'">'+u.name+(isMe?' (คุณ)':'')+'</div>'+badge;
+    if(!isMe){ div.onclick=function(){ openDM(u); }; div.title='DM กับ '+u.name; }
     ul.appendChild(div);
   });
 }
@@ -885,7 +815,7 @@ document.addEventListener('keydown',function(e){
   if(e.key!=='Enter')return;
   var chat=document.getElementById('chat');
   if(chat.style.display==='none'||chat.style.display===''){
-    if(googleUser || isGuest) join();
+    if(googleUser) join();
   } else {
     send();
   }
